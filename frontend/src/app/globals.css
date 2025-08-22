@@ -1,1 +1,134 @@
 @import "tailwindcss";
+
+:root {
+  --foreground-rgb: 15, 23, 42;
+  --background-start-rgb: 248, 250, 252;
+  --background-end-rgb: 241, 245, 249;
+}
+
+.dark {
+  --foreground-rgb: 255, 255, 255;
+  --background-start-rgb: 15, 23, 42;
+  --background-end-rgb: 30, 41, 59;
+}
+
+body {
+  color: rgb(15, 23, 42);
+  transition: background-color 0.3s ease-in-out, color 0.3s ease-in-out;
+}
+
+.dark body {
+  color: white;
+}
+
+.glass-card {
+  background-color: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(4px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  border-radius: 0.75rem;
+}
+
+.dark .glass-card {
+  background-color: rgba(30, 41, 59, 0.6);
+  border: 1px solid rgba(51, 65, 85, 0.3);
+}
+
+.dashboard-gradient-light {
+  background: linear-gradient(to bottom right, rgba(248, 250, 252, 0.4), rgba(219, 234, 254, 0.6), rgba(224, 231, 255, 0.4));
+}
+
+.dashboard-gradient-dark {
+  background: linear-gradient(to bottom right, rgba(15, 23, 42, 0.4), rgba(30, 41, 59, 0.6), rgba(49, 46, 129, 0.4));
+}
+
+.badge-low {
+  background-color: rgba(16, 185, 129, 0.1);
+  color: rgb(6, 95, 70);
+}
+
+.dark .badge-low {
+  background-color: rgba(16, 185, 129, 0.3);
+  color: rgb(110, 231, 183);
+}
+
+.badge-medium {
+  background-color: rgba(245, 158, 11, 0.1);
+  color: rgb(146, 64, 14);
+}
+
+.dark .badge-medium {
+  background-color: rgba(245, 158, 11, 0.3);
+  color: rgb(252, 211, 77);
+}
+
+.badge-high {
+  background-color: rgba(239, 68, 68, 0.1);
+  color: rgb(153, 27, 27);
+}
+
+.dark .badge-high {
+  background-color: rgba(239, 68, 68, 0.3);
+  color: rgb(252, 165, 165);
+}
+
+.badge-critical {
+  background-color: rgba(239, 68, 68, 0.1);
+  color: rgb(153, 27, 27);
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2);
+}
+
+.dark .badge-critical {
+  background-color: rgba(239, 68, 68, 0.4);
+  color: rgb(252, 165, 165);
+}
+
+/* Charts customization */
+.recharts-tooltip-wrapper .recharts-default-tooltip {
+  background-color: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(4px);
+  border: 1px solid rgba(226, 232, 240, 0.5);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  border-radius: 0.5rem;
+  padding: 0.5rem 0.75rem;
+}
+
+.dark .recharts-tooltip-wrapper .recharts-default-tooltip {
+  background-color: rgba(30, 41, 59, 0.9);
+  border: 1px solid rgba(51, 65, 85, 0.5);
+}
+
+.recharts-tooltip-label {
+  color: rgb(51, 65, 85);
+  font-weight: 500;
+  margin-bottom: 0.25rem;
+}
+
+.dark .recharts-tooltip-label {
+  color: rgb(203, 213, 225);
+}
+
+.recharts-tooltip-item {
+  font-size: 0.875rem;
+  padding-top: 0.125rem;
+  padding-bottom: 0.125rem;
+}
+
+/* Animation utilities */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { transform: translateY(10px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.5s ease forwards;
+}
+
+.animate-slide-up {
+  animation: slideUp 0.5s ease forwards;
+}

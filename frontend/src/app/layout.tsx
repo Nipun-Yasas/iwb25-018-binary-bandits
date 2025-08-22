@@ -8,6 +8,7 @@ import { NextAppProvider } from "@toolpad/core/nextjs";
 import NAVIGATION from "./_utils/navigation";
 import theme from "../theme";
 import { Suspense } from "react";
+import ClientThemeProvider from "./_components/ClientThemeProvider";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -33,13 +34,15 @@ export default function RootLayout({
         className={`${inter.variable} ${poppins.variable}`}
         suppressHydrationWarning
       >
-            <AppRouterCacheProvider>
-              <Suspense fallback={<div>loading</div>}>
+        <AppRouterCacheProvider>
+          <Suspense fallback={<div>loading</div>}>
+            <ClientThemeProvider>
               <NextAppProvider navigation={NAVIGATION} theme={theme}>
                 {children}
-            </NextAppProvider>
-            </Suspense>
-          </AppRouterCacheProvider>
+              </NextAppProvider>
+            </ClientThemeProvider>
+          </Suspense>
+        </AppRouterCacheProvider>
       </body>
     </html>
   );
