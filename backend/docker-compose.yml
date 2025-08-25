@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: 'mysql:8.0'
+    container_name: insurance_audit_db
+    ports:
+      - '3307:3306'
+    environment:
+      - MYSQL_ROOT_PASSWORD=insurance_password
+      - MYSQL_DATABASE=insurance_audit
+      - MYSQL_USER=audit_user
+      - MYSQL_PASSWORD=audit_password
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-pinsurance_password"]
+      timeout: 20s
+      retries: 10
+      interval: 30s
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - "./resources/db_setup.sql:/docker-entrypoint-initdb.d/1.sql"
+    networks:
+      - insurance_network
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: insurance_phpmyadmin
+    ports:
+      - '8081:80'
+    environment:
+      - PMA_HOST=mysql
+      - PMA_USER=root
+      - PMA_PASSWORD=insurance_password
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - insurance_network
+
+volumes:
+  mysql_data:
+
+networks:
+  insurance_network:
+    driver: bridge

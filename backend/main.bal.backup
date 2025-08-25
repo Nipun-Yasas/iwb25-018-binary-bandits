@@ -1,0 +1,991 @@
+// =============================================================================
+// INSURANCE CLAIM AUDIT DASHBOARD - BACKEND API (STEP 7: MODULAR APPROACH)
+// =============================================================================
+// Implementing modular backend architecture with separate endpoint modules
+
+import ballerina/http;
+import ballerina/log;
+import ballerina/time;
+import ballerina/sql;
+import ballerinax/mysql;
+
+// =============================================================================
+// DATABASE CONFIGURATION
+// =============================================================================
+// Configuration for our MySQL database connection
+
+const string DB_HOST = "localhost";
+const int DB_PORT = 3307;
+const string DB_NAME = "insurance_audit";
+const string DB_USER = "root";
+const string DB_PASSWORD = "insurance_password";
+
+// =============================================================================
+// DATABASE CLIENT SETUP
+// =============================================================================
+// MySQL client for database operations with error handling
+
+mysql:Client? dbClient = ();
+
+// Initialize database connection with error handling
+function initDatabaseConnection() returns boolean {
+    do {
+        mysql:Client tempClient = check new(
+            host = DB_HOST,
+            port = DB_PORT,
+            database = DB_NAME,
+            user = DB_USER,
+            password = DB_PASSWORD
+        );
+        dbClient = tempClient;
+        return true;
+    } on fail var e {
+        log:printError("❌ Database connection failed: " + e.toString());
+        return false;
+    }
+}
+
+// =============================================================================
+// DATABASE HELPER FUNCTIONS
+// =============================================================================
+// Functions to interact with the database
+
+// Get count of records in a table
+function getTableCount(string tableName) returns int|error {
+    mysql:Client? dbConn = dbClient;
+    if dbConn is mysql:Client {
+        // Use proper SQL query based on table name
+        sql:ParameterizedQuery query;
+        if tableName == "claims" {
+            query = `SELECT COUNT(*) as count FROM claims`;
+        } else if tableName == "fraud_alerts" {
+            query = `SELECT COUNT(*) as count FROM fraud_alerts`;
+        } else {
+            return error("Invalid table name: " + tableName);
+        }
+        
+        stream<record {int count;}, error?> resultStream = dbConn->query(query);
+        record {|record {int count;} value;|}|error? result = resultStream.next();
+        check resultStream.close();
+        
+        if result is record {|record {int count;} value;|} {
+            log:printInfo(string `📊 Table ${tableName} has ${result.value.count} records`);
+            return result.value.count;
+        }
+        return error("Failed to get count for table: " + tableName);
+    }
+    return error("Database client not initialized");
+}
+
+// Test database connection
+function testDatabaseConnection() returns boolean {
+    if dbClient is () {
+        return initDatabaseConnection();
+    }
+    
+    do {
+        int|error claimsCount = getTableCount("claims");
+        return claimsCount is int;
+    } on fail {
+        return false;
+    }
+}
+
+// Get database table information with real counts
+function getDatabaseTablesInfo() returns json|error {
+    int claimsCount = check getTableCount("claims");
+    int fraudAlertsCount = check getTableCount("fraud_alerts");
+    
+    return {
+        "tables": [
+            {
+                "name": "claims",
+                "description": "Insurance claims data",
+                "record_count": claimsCount,
+                "last_updated": time:utcNow().toString()
+            },
+            {
+                "name": "fraud_alerts", 
+                "description": "Fraud detection alerts",
+                "record_count": fraudAlertsCount,
+                "last_updated": time:utcNow().toString()
+            }
+        ],
+        "total_records": claimsCount + fraudAlertsCount,
+        "status": "✅ Live data from database"
+    };
+}
+
+// =============================================================================
+// DASHBOARD STATISTICS FUNCTIONS
+// =============================================================================
+// Functions to get comprehensive dashboard statistics
+
+// Get claims statistics by status
+function getClaimsStatsByStatus(mysql:Client currentClient) returns json|error {
+    mysql:Client? dbConn = dbClient;
+    if dbConn is mysql:Client {
+        sql:ParameterizedQuery query = `SELECT status, COUNT(*) as count, SUM(amount) as total_amount 
+                                       FROM claims 
+                                       GROUP BY status`;
+        
+        stream<record {string status; int count; decimal? total_amount;}, error?> resultStream = dbConn->query(query);
+        
+        json[] statusStats = [];
+        error? e = resultStream.forEach(function(record {string status; int count; decimal? total_amount;} row) {
+            statusStats.push({
+                "status": row.status,
+                "count": row.count,
+                "total_amount": row.total_amount ?: 0.0
+            });
+        });
+        
+        if e is error {
+            return e;
+        }
+        
+        return {
+            "by_status": statusStats
+        };
+    }
+    return error("Database client not initialized");
+}
+
+// Get claims statistics by risk level
+function getClaimsStatsByRisk(mysql:Client currentClient) returns json|error {
+    mysql:Client? dbConn = dbClient;
+    if dbConn is mysql:Client {
+        sql:ParameterizedQuery query = `SELECT risk_level, COUNT(*) as count, AVG(amount) as avg_amount 
+                                       FROM claims 
+                                       GROUP BY risk_level`;
+        
+        stream<record {string risk_level; int count; decimal? avg_amount;}, error?> resultStream = dbConn->query(query);
+        
+        json[] riskStats = [];
+        error? e = resultStream.forEach(function(record {string risk_level; int count; decimal? avg_amount;} row) {
+            riskStats.push({
+                "risk_level": row.risk_level,
+                "count": row.count,
+                "average_amount": row.avg_amount ?: 0.0
+            });
+        });
+        
+        if e is error {
+            return e;
+        }
+        
+        return {
+            "by_risk_level": riskStats
+        };
+    }
+    return error("Database client not initialized");
+}
+
+// Get fraud alerts statistics by priority
+function getFraudAlertStats(mysql:Client currentClient) returns json|error {
+    mysql:Client? dbConn = dbClient;
+    if dbConn is mysql:Client {
+        sql:ParameterizedQuery query = `SELECT priority, COUNT(*) as count, 
+                                       SUM(CASE WHEN dismissed = 0 THEN 1 ELSE 0 END) as active_count,
+                                       SUM(CASE WHEN dismissed = 1 THEN 1 ELSE 0 END) as dismissed_count
+                                       FROM fraud_alerts 
+                                       GROUP BY priority`;
+        
+        stream<record {string priority; int count; int active_count; int dismissed_count;}, error?> resultStream = dbConn->query(query);
+        
+        json[] fraudStats = [];
+        error? e = resultStream.forEach(function(record {string priority; int count; int active_count; int dismissed_count;} row) {
+            fraudStats.push({
+                "priority": row.priority,
+                "total_count": row.count,
+                "active_count": row.active_count,
+                "dismissed_count": row.dismissed_count
+            });
+        });
+        
+        if e is error {
+            return e;
+        }
+        
+        return {
+            "by_priority": fraudStats
+        };
+    }
+    return error("Database client not initialized");
+}
+
+// Get financial analytics
+function getFinancialAnalytics(mysql:Client currentClient) returns json|error {
+    mysql:Client? dbConn = dbClient;
+    if dbConn is mysql:Client {
+        sql:ParameterizedQuery query = `SELECT 
+                                       COUNT(*) as total_claims,
+                                       SUM(amount) as total_amount,
+                                       AVG(amount) as average_amount,
+                                       MIN(amount) as min_amount,
+                                       MAX(amount) as max_amount,
+                                       SUM(CASE WHEN status = 'approved' THEN amount ELSE 0 END) as approved_amount,
+                                       SUM(CASE WHEN status = 'approved' THEN 1 ELSE 0 END) as approved_count
+                                       FROM claims 
+                                       WHERE amount IS NOT NULL`;
+        
+        stream<record {int total_claims; decimal? total_amount; decimal? average_amount; decimal? min_amount; decimal? max_amount; decimal? approved_amount; int approved_count;}, error?> resultStream = dbConn->query(query);
+        
+        record {|record {int total_claims; decimal? total_amount; decimal? average_amount; decimal? min_amount; decimal? max_amount; decimal? approved_amount; int approved_count;} value;|}|error? result = resultStream.next();
+        check resultStream.close();
+        
+        if result is record {|record {int total_claims; decimal? total_amount; decimal? average_amount; decimal? min_amount; decimal? max_amount; decimal? approved_amount; int approved_count;} value;|} {
+            return {
+                "total_claims": result.value.total_claims,
+                "total_amount": result.value.total_amount ?: 0.0,
+                "average_amount": result.value.average_amount ?: 0.0,
+                "min_amount": result.value.min_amount ?: 0.0,
+                "max_amount": result.value.max_amount ?: 0.0,
+                "approved_amount": result.value.approved_amount ?: 0.0,
+                "approved_count": result.value.approved_count,
+                "approval_rate": result.value.total_claims > 0 ? (result.value.approved_count * 100.0 / result.value.total_claims) : 0.0
+            };
+        }
+        return error("Failed to get financial analytics");
+    }
+    return error("Database client not initialized");
+}
+
+// Get recent activity summary
+function getRecentActivity(mysql:Client currentClient) returns json|error {
+    mysql:Client? dbConn = dbClient;
+    if dbConn is mysql:Client {
+        // Recent claims (last 30 days)
+        sql:ParameterizedQuery recentClaimsQuery = `SELECT COUNT(*) as recent_claims_count 
+                                                   FROM claims 
+                                                   WHERE created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)`;
+        
+        stream<record {int recent_claims_count;}, error?> claimsStream = dbConn->query(recentClaimsQuery);
+        record {|record {int recent_claims_count;} value;|}|error? claimsResult = claimsStream.next();
+        check claimsStream.close();
+        
+        // Recent fraud alerts (last 30 days)
+        sql:ParameterizedQuery recentFraudQuery = `SELECT COUNT(*) as recent_fraud_count 
+                                                  FROM fraud_alerts 
+                                                  WHERE created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)`;
+        
+        stream<record {int recent_fraud_count;}, error?> fraudStream = dbConn->query(recentFraudQuery);
+        record {|record {int recent_fraud_count;} value;|}|error? fraudResult = fraudStream.next();
+        check fraudStream.close();
+        
+        if claimsResult is record {|record {int recent_claims_count;} value;|} && fraudResult is record {|record {int recent_fraud_count;} value;|} {
+            return {
+                "recent_claims_30_days": claimsResult.value.recent_claims_count,
+                "recent_fraud_alerts_30_days": fraudResult.value.recent_fraud_count,
+                "period": "Last 30 days"
+            };
+        }
+        return error("Failed to get recent activity data");
+    }
+    return error("Database client not initialized");
+}
+
+// Comprehensive dashboard statistics
+function getDashboardStatistics() returns json|error {
+    log:printInfo("📊 Generating comprehensive dashboard statistics...");
+    
+    mysql:Client? currentClient = dbClient;
+    if currentClient is mysql:Client {
+        // Get all statistics using the database client
+        json|error claimsStatusStats = getClaimsStatsByStatus(currentClient);
+        json|error claimsRiskStats = getClaimsStatsByRisk(currentClient);
+        json|error fraudStats = getFraudAlertStats(currentClient);
+        json|error financialStats = getFinancialAnalytics(currentClient);
+        json|error recentActivity = getRecentActivity(currentClient);
+        
+        // Get basic counts
+        int|error claimsCount = getTableCount("claims");
+        int|error fraudAlertsCount = getTableCount("fraud_alerts");
+        
+        json response = {
+            "summary": {
+                "total_claims": claimsCount is int ? claimsCount : 0,
+                "total_fraud_alerts": fraudAlertsCount is int ? fraudAlertsCount : 0,
+                "generated_at": time:utcNow().toString(),
+                "status": "✅ Live dashboard data"
+            }
+        };
+        
+        // Add successful statistics
+        if claimsStatusStats is json {
+            map<json> responseMap = <map<json>>response;
+            responseMap["claims_by_status"] = claimsStatusStats;
+            response = responseMap;
+        }
+        
+        if claimsRiskStats is json {
+            map<json> responseMap = <map<json>>response;
+            responseMap["claims_by_risk"] = claimsRiskStats;
+            response = responseMap;
+        }
+        
+        if fraudStats is json {
+            map<json> responseMap = <map<json>>response;
+            responseMap["fraud_alerts"] = fraudStats;
+            response = responseMap;
+        }
+        
+        if financialStats is json {
+            map<json> responseMap = <map<json>>response;
+            responseMap["financial_analytics"] = financialStats;
+            response = responseMap;
+        }
+        
+        if recentActivity is json {
+            map<json> responseMap = <map<json>>response;
+            responseMap["recent_activity"] = recentActivity;
+            response = responseMap;
+        }
+        
+        return response;
+    }
+    
+    return error("Database client not initialized");
+}
+
+// ==========================================================================
+// CLAIMS MANAGEMENT FUNCTIONS - Basic CRUD Operations for Claims
+// ==========================================================================
+
+// Get all claims (simplified version)
+function getAllClaims() returns json|error {
+    log:printInfo("📋 Fetching all claims from database");
+    
+    mysql:Client? currentClient = dbClient;
+    if currentClient is mysql:Client {
+        sql:ParameterizedQuery query = `SELECT id, submission_date, amount, risk_level, status, 
+                                               claim_type, reviewer, submitter_id, description, 
+                                               incident_date, location, created_at, updated_at 
+                                        FROM claims ORDER BY created_at DESC`;
+        
+        stream<record {}, error?> resultStream = currentClient->query(query);
+        record {}[]|error claims = from record {} claim in resultStream select claim;
+        check resultStream.close();
+        
+        if claims is record {}[] {
+            return {
+                "message": "✅ Claims retrieved successfully",
+                "total_count": claims.length(),
+                "claims": claims.toJson(),
+                "retrieved_at": time:utcNow().toString()
+            };
+        }
+    }
+    
+    return error("Failed to fetch claims from database");
+}
+
+// Get claims by status
+function getClaimsByStatus(string status) returns json|error {
+    log:printInfo("📋 Fetching claims with status: " + status);
+    
+    mysql:Client? currentClient = dbClient;
+    if currentClient is mysql:Client {
+        sql:ParameterizedQuery query = `SELECT id, submission_date, amount, risk_level, status, 
+                                               claim_type, reviewer, submitter_id, description, 
+                                               incident_date, location, created_at, updated_at 
+                                        FROM claims WHERE status = ${status} ORDER BY created_at DESC`;
+        
+        stream<record {}, error?> resultStream = currentClient->query(query);
+        record {}[]|error claims = from record {} claim in resultStream select claim;
+        check resultStream.close();
+        
+        if claims is record {}[] {
+            return {
+                "message": "✅ Claims retrieved by status: " + status,
+                "status_filter": status,
+                "total_count": claims.length(),
+                "claims": claims.toJson(),
+                "retrieved_at": time:utcNow().toString()
+            };
+        }
+    }
+    
+    return error("Failed to fetch claims by status");
+}
+
+// Get a single claim by ID
+function getClaimById(int claimId) returns json|error {
+    log:printInfo("� Fetching claim with ID: " + claimId.toString());
+    
+    mysql:Client? currentClient = dbClient;
+    if currentClient is mysql:Client {
+        sql:ParameterizedQuery query = `SELECT id, submission_date, amount, risk_level, status, 
+                                               claim_type, reviewer, submitter_id, description, 
+                                               incident_date, location, created_at, updated_at 
+                                        FROM claims WHERE id = ${claimId}`;
+        
+        stream<record {}, error?> resultStream = currentClient->query(query);
+        record {}|error? claim = resultStream.next();
+        check resultStream.close();
+        
+        if claim is record {} {
+            return {
+                "message": "✅ Claim found",
+                "claim_id": claimId,
+                "claim": claim.toJson(),
+                "retrieved_at": time:utcNow().toString()
+            };
+        } else {
+            return error("Claim not found with ID: " + claimId.toString());
+        }
+    }
+    
+    return error("Database client not initialized");
+}
+
+// Update claim status (simplified version)
+function updateClaimStatus(int claimId, string newStatus) returns json|error {
+    log:printInfo("📝 Updating claim " + claimId.toString() + " status to: " + newStatus);
+    
+    mysql:Client? currentClient = dbClient;
+    if currentClient is mysql:Client {
+        sql:ParameterizedQuery updateQuery = `UPDATE claims SET status = ${newStatus}, updated_at = NOW() WHERE id = ${claimId}`;
+        
+        sql:ExecutionResult|error result = currentClient->execute(updateQuery);
+        
+        if result is sql:ExecutionResult {
+            if result.affectedRowCount > 0 {
+                log:printInfo("✅ Claim status updated successfully");
+                
+                // Return the updated claim
+                json|error updatedClaim = getClaimById(claimId);
+                if updatedClaim is json {
+                    return {
+                        "message": "Claim status updated successfully",
+                        "claim_id": claimId,
+                        "new_status": newStatus,
+                        "claim": updatedClaim,
+                        "updated_at": time:utcNow().toString()
+                    };
+                }
+            } else {
+                return error("Claim not found with ID: " + claimId.toString());
+            }
+        }
+    }
+    
+    return error("Failed to update claim status");
+}
+
+// =============================================================================
+// HTTP SERVICE WITH ENHANCED DATABASE INFORMATION
+// =============================================================================
+// Enhanced service with comprehensive database status
+
+// HTTP listener on port 8080
+listener http:Listener httpListener = new(8080);
+
+service /api on httpListener {
+    
+    // Service initialization with logging and database connection test
+    function init() returns error? {
+        log:printInfo("🚀 Insurance Claim Audit Dashboard API Starting...");
+        log:printInfo("✅ CORS will be handled in individual endpoints");
+        log:printInfo("🔧 Attempting database connection...");
+        
+        // Test database connection on startup
+        boolean dbConnected = initDatabaseConnection();
+        if dbConnected {
+            log:printInfo("✅ Database connection successful!");
+            
+            // Get real table counts
+            int|error claimsCount = getTableCount("claims");
+            int|error fraudCount = getTableCount("fraud_alerts");
+            
+            if claimsCount is int && fraudCount is int {
+                log:printInfo(string `📊 Database contains ${claimsCount} claims and ${fraudCount} fraud alerts`);
+            }
+        } else {
+            log:printWarn("⚠️ Database connection failed - API will run with limited functionality");
+            log:printInfo("💡 Service will continue without database connection");
+        }
+        
+        log:printInfo("🌐 Server running on http://localhost:8080/api");
+        log:printInfo("📋 Available endpoints:");
+        log:printInfo("   GET /api/test        - Basic test endpoint");
+        log:printInfo("   GET /api/health      - Health check endpoint");
+        log:printInfo("   GET /api/status      - Service status with timestamp");
+        log:printInfo("   GET /api/dbtest      - Database connection test");
+        log:printInfo("   GET /api/dbinfo      - Database configuration info");
+        log:printInfo("   GET /api/tables      - Live database table information");
+        return ();
+    }
+    
+    // ==========================================================================
+    // TEST ENDPOINT - Enhanced with logging and CORS
+    // ==========================================================================
+    @http:ResourceConfig {
+        cors: {
+            allowOrigins: ["http://localhost:3000"],
+            allowCredentials: false,
+            allowHeaders: ["Content-Type"],
+            allowMethods: ["GET"]
+        }
+    }
+    resource function get test() returns json {
+        log:printInfo("🔍 Test endpoint called");
+        
+        // Test database connection and get basic info
+        boolean dbConnected = testDatabaseConnection();
+        
+        return {
+            "message": "✅ Insurance Audit Dashboard API is working!",
+            "timestamp": time:utcNow().toString(),
+            "version": "1.0.0",
+            "status": "Enhanced with real database connectivity",
+            "database_status": dbConnected ? "✅ Connected" : "❌ Disconnected",
+            "features": [
+                "✅ HTTP service working",
+                "✅ Logging implemented",  
+                "✅ CORS configured",
+                "✅ MySQL driver loaded",
+                dbConnected ? "✅ Database connected" : "❌ Database connection failed",
+                "✅ Real-time data queries ready"
+            ]
+        };
+    }
+    
+    // ==========================================================================
+    // HEALTH CHECK ENDPOINT - Enhanced with logging
+    // ==========================================================================
+    @http:ResourceConfig {
+        cors: {
+            allowOrigins: ["http://localhost:3000"],
+            allowCredentials: false,
+            allowHeaders: ["Content-Type"],
+            allowMethods: ["GET"]
+        }
+    }
+    resource function get health() returns json {
+        log:printInfo("🔍 Health check requested");
+        
+        return {
+            "status": "healthy",
+            "service": "Insurance Claim Audit Dashboard API",
+            "version": "1.0.0",
+            "timestamp": time:utcNow().toString(),
+            "uptime": "Service operational",
+            "database": "Configuration ready for connection",
+            "message": "✅ Service ready for database testing"
+        };
+    }
+    
+    // ==========================================================================
+    // STATUS ENDPOINT - Detailed service information
+    // ==========================================================================
+    @http:ResourceConfig {
+        cors: {
+            allowOrigins: ["http://localhost:3000"],
+            allowCredentials: false,
+            allowHeaders: ["Content-Type"],
+            allowMethods: ["GET"]
+        }
+    }
+    resource function get status() returns json {
+        log:printInfo("📊 Status endpoint requested");
+        
+        return {
+            "service": {
+                "name": "Insurance Claim Audit Dashboard API",
+                "version": "1.0.0",
+                "status": "operational",
+                "timestamp": time:utcNow().toString()
+            },
+            "features": {
+                "http_service": "✅ Active",
+                "cors_support": "✅ Configured for localhost:3000",
+                "logging": "✅ Active",
+                "database_config": "✅ MySQL configuration loaded",
+                "dashboard_endpoints": "🔄 Coming in next iteration"
+            },
+            "database_config": {
+                "host": DB_HOST,
+                "port": DB_PORT,
+                "database": DB_NAME,
+                "user": DB_USER,
+                "status": "Ready for connection testing"
+            },
+            "endpoints": [
+                {
+                    "path": "/api/test",
+                    "method": "GET",
+                    "description": "Basic connectivity test"
+                },
+                {
+                    "path": "/api/health", 
+                    "method": "GET",
+                    "description": "Service health check"
+                },
+                {
+                    "path": "/api/status",
+                    "method": "GET", 
+                    "description": "Detailed service status"
+                },
+                {
+                    "path": "/api/dbtest",
+                    "method": "GET", 
+                    "description": "Database connection test"
+                },
+                {
+                    "path": "/api/dbinfo",
+                    "method": "GET", 
+                    "description": "Database configuration information"
+                },
+                {
+                    "path": "/api/tables",
+                    "method": "GET", 
+                    "description": "Live database table information"
+                }
+            ],
+            "next_steps": [
+                "✅ MySQL driver configured",
+                "✅ Real database connection tested",
+                "✅ Live data queries implemented",
+                "🔄 Dashboard statistics endpoint",
+                "🔄 Claims management endpoints"
+            ]
+        };
+    }
+    
+    // ==========================================================================
+    // DATABASE CONNECTION TEST ENDPOINT
+    // ==========================================================================
+    @http:ResourceConfig {
+        cors: {
+            allowOrigins: ["http://localhost:3000"],
+            allowCredentials: false,
+            allowHeaders: ["Content-Type"],
+            allowMethods: ["GET"]
+        }
+    }
+    resource function get dbtest() returns json {
+        log:printInfo("🔍 Database connection test requested");
+        
+        // Perform actual database connection test
+        boolean isConnected = testDatabaseConnection();
+        
+        if isConnected {
+            // If connected, get real table counts
+            int|error claimsCount = getTableCount("claims");
+            int|error fraudCount = getTableCount("fraud_alerts");
+            
+            return {
+                "status": "✅ connected",
+                "message": "Database connection successful",
+                "database": {
+                    "host": DB_HOST,
+                    "port": DB_PORT,
+                    "database": DB_NAME,
+                    "user": DB_USER,
+                    "connection_status": "✅ Active and responsive"
+                },
+                "live_data": {
+                    "claims_count": claimsCount is int ? claimsCount : "Error retrieving count",
+                    "fraud_alerts_count": fraudCount is int ? fraudCount : "Error retrieving count",
+                    "last_checked": time:utcNow().toString()
+                },
+                "docker_status": {
+                    "mysql_container": "✅ Running on port 3307",
+                    "phpmyadmin_container": "✅ Running on port 8081",
+                    "verification": "Live data retrieved successfully"
+                }
+            };
+        } else {
+            return {
+                "status": "❌ connection_failed",
+                "message": "Unable to connect to database",
+                "database": {
+                    "host": DB_HOST,
+                    "port": DB_PORT,
+                    "database": DB_NAME,
+                    "user": DB_USER,
+                    "connection_status": "❌ Failed to connect"
+                },
+                "troubleshooting": [
+                    "Check if Docker containers are running: docker ps",
+                    "Verify MySQL container is healthy",
+                    "Check database credentials",
+                    "Ensure port 3307 is accessible"
+                ],
+                "timestamp": time:utcNow().toString()
+            };
+        }
+    }
+    
+    // ==========================================================================
+    // DATABASE INFORMATION ENDPOINT
+    // ==========================================================================
+    @http:ResourceConfig {
+        cors: {
+            allowOrigins: ["http://localhost:3000"],
+            allowCredentials: false,
+            allowHeaders: ["Content-Type"],
+            allowMethods: ["GET"]
+        }
+    }
+    resource function get dbinfo() returns json {
+        log:printInfo("🔍 Database info requested");
+        
+        // Get real database table information
+        json|error tablesInfo = getDatabaseTablesInfo();
+        
+        if tablesInfo is json {
+            // Return real database information
+            return {
+                "configuration": {
+                    "host": DB_HOST,
+                    "port": DB_PORT,
+                    "database": DB_NAME,
+                    "user": DB_USER,
+                    "password": "[SECURED]"
+                },
+                "database_info": tablesInfo,
+                "connection_verification": {
+                    "docker_command": "docker ps",
+                    "expected_containers": [
+                        "insurance_audit_db (MySQL on port 3307)",
+                        "insurance_phpmyadmin (phpMyAdmin on port 8081)"
+                    ],
+                    "manual_test": "Access phpMyAdmin at http://localhost:8081"
+                },
+                "status": "✅ Live data retrieved from database",
+                "timestamp": time:utcNow().toString()
+            };
+        } else {
+            // Fallback to static information if database query fails
+            return {
+                "configuration": {
+                    "host": DB_HOST,
+                    "port": DB_PORT,
+                    "database": DB_NAME,
+                    "user": DB_USER,
+                    "password": "[SECURED]"
+                },
+                "tables": [
+                    {
+                        "name": "claims",
+                        "description": "Insurance claims data",
+                        "record_count": "Unable to retrieve",
+                        "status": "❌ Query failed"
+                    },
+                    {
+                        "name": "fraud_alerts", 
+                        "description": "Fraud detection alerts",
+                        "record_count": "Unable to retrieve",
+                        "status": "❌ Query failed"
+                    }
+                ],
+                "connection_verification": {
+                    "docker_command": "docker ps",
+                    "expected_containers": [
+                        "insurance_audit_db (MySQL on port 3307)",
+                        "insurance_phpmyadmin (phpMyAdmin on port 8081)"
+                    ],
+                    "manual_test": "Access phpMyAdmin at http://localhost:8081"
+                },
+                "status": "❌ Database query failed",
+                "error": tablesInfo.toString(),
+                "timestamp": time:utcNow().toString()
+            };
+        }
+    }
+    
+    // ==========================================================================
+    // DASHBOARD STATISTICS ENDPOINT - Comprehensive analytics for frontend
+    // ==========================================================================
+    @http:ResourceConfig {
+        cors: {
+            allowOrigins: ["http://localhost:3000"],
+            allowCredentials: true,
+            allowHeaders: ["Authorization", "Content-Type"],
+            allowMethods: ["GET", "OPTIONS"]
+        }
+    }
+    resource function get dashboard/stats() returns json|error {
+        log:printInfo("📊 Dashboard Statistics endpoint called");
+        
+        json|error result = getDashboardStatistics();
+        
+        if result is json {
+            log:printInfo("✅ Dashboard statistics generated successfully");
+            return result;
+        } else {
+            log:printError("❌ Error generating dashboard statistics: " + result.message());
+            return error("Failed to generate dashboard statistics: " + result.message());
+        }
+    }
+    
+    // ==========================================================================
+    // CLAIMS MANAGEMENT ENDPOINTS - Step 7 Implementation
+    // ==========================================================================
+    
+    // GET /api/claims - Get all claims
+    @http:ResourceConfig {
+        cors: {
+            allowOrigins: ["http://localhost:3000"],
+            allowCredentials: true,
+            allowHeaders: ["Authorization", "Content-Type"],
+            allowMethods: ["GET", "OPTIONS"]
+        }
+    }
+    resource function get claims() returns json|error {
+        log:printInfo("📋 Claims list endpoint called");
+        
+        json|error result = getAllClaims();
+        
+        if result is json {
+            log:printInfo("✅ Claims retrieved successfully");
+            return result;
+        } else {
+            log:printError("❌ Error fetching claims: " + result.message());
+            return error("Failed to fetch claims: " + result.message());
+        }
+    }
+    
+    // GET /api/claims/{id} - Get specific claim
+    @http:ResourceConfig {
+        cors: {
+            allowOrigins: ["http://localhost:3000"],
+            allowCredentials: true,
+            allowHeaders: ["Authorization", "Content-Type"],
+            allowMethods: ["GET", "OPTIONS"]
+        }
+    }
+    resource function get claims/[int claimId]() returns json|error {
+        log:printInfo("📋 Single claim endpoint called for ID: " + claimId.toString());
+        
+        mysql:Client? currentClient = dbClient;
+        if currentClient is mysql:Client {
+            json|error result = getClaimById(claimId);
+            
+            if result is json {
+                log:printInfo("✅ Claim retrieved successfully");
+                return result;
+            } else {
+                log:printError("❌ Error fetching claim: " + result.message());
+                return error("Failed to fetch claim: " + result.message());
+            }
+        }
+        
+        return error("Database client not initialized");
+    }
+    
+    // GET /api/claims/status/{status} - Get claims by status
+    @http:ResourceConfig {
+        cors: {
+            allowOrigins: ["http://localhost:3000"],
+            allowCredentials: true,
+            allowHeaders: ["Authorization", "Content-Type"],
+            allowMethods: ["GET", "OPTIONS"]
+        }
+    }
+    resource function get claims/status/[string status]() returns json|error {
+        log:printInfo("📋 Claims by status endpoint called for: " + status);
+        
+        mysql:Client? currentClient = dbClient;
+        if currentClient is mysql:Client {
+            json|error result = getClaimsByStatus(status);
+            
+            if result is json {
+                log:printInfo("✅ Claims by status retrieved successfully");
+                return result;
+            } else {
+                log:printError("❌ Error fetching claims by status: " + result.message());
+                return error("Failed to fetch claims by status: " + result.message());
+            }
+        }
+        
+        return error("Database client not initialized");
+    }
+    
+    // PUT /api/claims/{id}/status - Update claim status
+    @http:ResourceConfig {
+        cors: {
+            allowOrigins: ["http://localhost:3000"],
+            allowCredentials: true,
+            allowHeaders: ["Authorization", "Content-Type"],
+            allowMethods: ["PUT", "OPTIONS"]
+        }
+    }
+    resource function put claims/[int claimId]/status(@http:Payload json payload) returns json|error {
+        log:printInfo("📝 Update claim status endpoint called for ID: " + claimId.toString());
+        
+        mysql:Client? currentClient = dbClient;
+        if currentClient is mysql:Client {
+            // Extract status from payload
+            json statusData = payload.status;
+            if statusData is string {
+                json|error result = updateClaimStatus(claimId, statusData);
+                
+                if result is json {
+                    log:printInfo("✅ Claim status updated successfully");
+                    return result;
+                } else {
+                    log:printError("❌ Error updating claim status: " + result.message());
+                    return error("Failed to update claim status: " + result.message());
+                }
+            } else {
+                return error("Invalid status provided in request payload");
+            }
+        }
+        
+        return error("Database client not initialized");
+    }
+
+    // ==========================================================================
+    // LIVE DATABASE TABLES ENDPOINT - Real-time table information
+    // ==========================================================================
+    @http:ResourceConfig {
+        cors: {
+            allowOrigins: ["http://localhost:3000"],
+            allowCredentials: false,
+            allowHeaders: ["Content-Type"],
+            allowMethods: ["GET"]
+        }
+    }
+    resource function get tables() returns json {
+        log:printInfo("🔍 Live database tables info requested");
+        
+        // Get real database table information
+        json|error tablesInfo = getDatabaseTablesInfo();
+        
+        if tablesInfo is json {
+            return {
+                "message": "✅ Live database table information",
+                "database": DB_NAME,
+                "host": DB_HOST + ":" + DB_PORT.toString(),
+                "data": tablesInfo,
+                "retrieved_at": time:utcNow().toString(),
+                "note": "This data is retrieved in real-time from the database"
+            };
+        } else {
+            return {
+                "message": "❌ Failed to retrieve live database information",
+                "database": DB_NAME,
+                "host": DB_HOST + ":" + DB_PORT.toString(),
+                "error": tablesInfo.toString(),
+                "retrieved_at": time:utcNow().toString(),
+                "fallback": "Check database connection and try again"
+            };
+        }
+    }
+}
+
+// =============================================================================
+// STEP 5 PROGRESS UPDATE - REAL DATABASE CONNECTIVITY:
+// =============================================================================
+// 1. ✅ Basic HTTP service working
+// 2. ✅ CORS and logging implemented  
+// 3. ✅ Database configuration loaded and ready
+// 4. ✅ MySQL driver dependencies added
+// 5. ✅ Real database connection implemented
+// 6. ✅ Live table count queries working
+// 7. ✅ Dynamic endpoints with real data
+// 8. 🔄 Next: Dashboard statistics endpoint
+// 9. 🔄 Then: Claims management endpoints

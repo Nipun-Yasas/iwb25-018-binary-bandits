@@ -1,0 +1,174 @@
+### Basic Test
+GET http://localhost:8080/api/test
+
+HTTP/1.1 200  - OK
+content-type: application/json
+connection: close
+server: ballerina
+date: Mon, 25 Aug 2025 18:16:01 +0530
+content-encoding: gzip
+content-length: 152
+###
+GET http://localhost:8080/api/health
+
+HTTP/1.1 200  - OK
+content-type: application/json
+connection: close
+server: ballerina
+date: Mon, 25 Aug 2025 18:16:10 +0530
+content-encoding: gzip
+content-length: 126
+###
+GET http://localhost:8080/api/status
+
+HTTP/1.1 200  - OK
+content-type: application/json
+connection: close
+server: ballerina
+date: Mon, 25 Aug 2025 18:16:13 +0530
+content-encoding: gzip
+content-length: 137
+###
+GET http://localhost:8080/api/dbtest
+
+HTTP/1.1 200  - OK
+content-type: application/json
+connection: close
+server: ballerina
+date: Mon, 25 Aug 2025 18:16:17 +0530
+content-encoding: gzip
+content-length: 152
+###
+GET http://localhost:8080/api/dbinfo
+
+HTTP/1.1 200  - OK
+content-type: application/json
+connection: close
+server: ballerina
+date: Mon, 25 Aug 2025 18:16:20 +0530
+content-encoding: gzip
+content-length: 175
+###
+GET http://localhost:8080/api/dashboard/stats
+
+HTTP/1.1 200  - OK
+content-type: application/json
+connection: close
+server: ballerina
+date: Mon, 25 Aug 2025 18:16:28 +0530
+content-encoding: gzip
+content-length: 358
+###
+GET http://localhost:8080/api/claims
+
+HTTP/1.1 200  - OK
+content-type: application/json
+connection: close
+server: ballerina
+date: Mon, 25 Aug 2025 18:16:50 +0530
+content-encoding: gzip
+content-length: 764
+###
+GET http://localhost:8080/api/claims/CLM-47254
+
+HTTP/1.1 200  - OK
+content-type: application/json
+connection: close
+server: ballerina
+date: Mon, 25 Aug 2025 18:17:02 +0530
+content-encoding: gzip
+content-length: 326
+###
+GET http://localhost:8080/api/claims/CLM-47258
+
+HTTP/1.1 200  - OK
+content-type: application/json
+connection: close
+server: ballerina
+date: Mon, 25 Aug 2025 18:17:06 +0530
+content-encoding: gzip
+content-length: 340
+###
+GET http://localhost:8080/api/claims/status/approved
+
+HTTP/1.1 200  - OK
+content-type: application/json
+connection: close
+server: ballerina
+date: Mon, 25 Aug 2025 18:17:11 +0530
+content-encoding: gzip
+content-length: 509
+###
+GET http://localhost:8080/api/claims/status/pending
+###
+GET http://localhost:8080/api/claims/status/rejected
+###
+PUT http://localhost:8080/api/claims/CLM-47254/status
+Content-Type: application/json
+
+{
+  "status": "approved"
+}
+
+HTTP/1.1 200  - OK
+content-type: application/json
+connection: close
+server: ballerina
+date: Mon, 25 Aug 2025 18:17:19 +0530
+content-encoding: gzip
+content-length: 363
+###
+PUT http://localhost:8080/api/claims/CLM-47258/status
+Content-Type: application/json
+
+{
+  "status": "rejected"
+}
+
+HTTP/1.1 200  - OK
+content-type: application/json
+connection: close
+server: ballerina
+date: Mon, 25 Aug 2025 18:24:33 +0530
+content-encoding: gzip
+content-length: 373
+###
+GET http://localhost:8080/api/fraud
+
+HTTP/1.1 200  - OK
+content-type: application/json
+connection: close
+server: ballerina
+date: Mon, 25 Aug 2025 18:24:24 +0530
+content-encoding: gzip
+content-length: 361
+###
+GET http://localhost:8080/api/fraud/active
+
+HTTP/1.1 200  - OK
+content-type: application/json
+connection: close
+server: ballerina
+date: Mon, 25 Aug 2025 18:24:17 +0530
+content-encoding: gzip
+content-length: 295
+###
+PUT http://localhost:8080/api/fraud/ALERT-002/dismiss
+
+HTTP/1.1 200  - OK
+content-type: application/json
+connection: close
+server: ballerina
+date: Mon, 25 Aug 2025 18:23:32 +0530
+content-encoding: gzip
+content-length: 295
+###
+GET http://localhost:8080/api/tables
+
+HTTP/1.1 200  - OK
+content-type: application/json
+connection: close
+server: ballerina
+date: Mon, 25 Aug 2025 18:23:37 +0530
+content-encoding: gzip
+content-length: 234

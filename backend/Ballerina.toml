@@ -2,7 +2,40 @@
 org = "user"
 name = "backend"
 version = "0.1.0"
-distribution = "2201.12.8"
+distribution = "2201.10.2"
 
 [build-options]
 observabilityIncluded = true
+
+# Dependencies for Insurance Audit Dashboard Backend
+[[dependency]]
+org = "ballerina"
+name = "http"
+version = "2.12.2"
+
+[[dependency]]
+org = "ballerina"
+name = "log"
+version = "2.10.0"
+
+[[dependency]]
+org = "ballerina"
+name = "time"
+version = "2.4.0"
+
+# Database connectivity
+[[dependency]]
+org = "ballerina"
+name = "sql"
+version = "1.13.2"
+
+[[dependency]]
+org = "ballerinax"
+name = "mysql"
+version = "1.13.1"
+
+# MySQL Driver with explicit configuration
+[[platform.java17.dependency]]
+groupId = "com.mysql"
+artifactId = "mysql-connector-j"
+version = "8.0.33"
