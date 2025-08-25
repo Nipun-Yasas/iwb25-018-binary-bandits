@@ -5,13 +5,16 @@ import {
   MagnifyingGlassIcon,
   ChevronDownIcon,
   ChevronUpIcon,
-  EllipsisHorizontalIcon,
+  CheckIcon,
+  XMarkIcon,
+  ClockIcon,
+  PencilIcon,
 } from '@heroicons/react/24/outline'
 import { claimsApi, type Claim } from '@/lib/api'
 import { useClaimUpdates, useWebSocketConnection } from '@/lib/useRealTime'
 
 type RiskLevel = 'low' | 'medium' | 'high' | 'critical'
-type Status = 'pending' | 'approved' | 'rejected' | 'under_review' | 'in_review'
+type Status = 'pending' | 'approved' | 'rejected' | 'in_review'
 
 export const ClaimsTable: React.FC = () => {
   const [claims, setClaims] = useState<Claim[]>([])
@@ -20,6 +23,8 @@ export const ClaimsTable: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('')
   const [sortField, setSortField] = useState<keyof Claim>('created_at')
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc')
+  const [editingStatus, setEditingStatus] = useState<string | null>(null)
+  const [updatingClaim, setUpdatingClaim] = useState<string | null>(null)
 
   // WebSocket integration for real-time updates
   const wsConnection = useWebSocketConnection()
@@ -68,6 +73,40 @@ export const ClaimsTable: React.FC = () => {
     } finally {
       setLoading(false);
     }
+  }
+
+  const updateClaimStatus = async (claimId: string, newStatus: string) => {
+    if (updatingClaim) return; // Prevent multiple updates
+    
+    try {
+      setUpdatingClaim(claimId);
+      console.log(`🔄 Updating claim ${claimId} status to: ${newStatus}`);
+      
+      const response = await claimsApi.updateClaimStatus(claimId, newStatus);
+      console.log('✅ Status update response:', response);
+      
+      // Update the local state immediately for better UX
+      setClaims(prevClaims => 
+        prevClaims.map(claim => 
+          claim.id === claimId 
+            ? { ...claim, status: newStatus, updated_at: new Date().toISOString() }
+            : claim
+        )
+      );
+      
+      // The WebSocket will also send an update, which will trigger a re-fetch
+      setEditingStatus(null);
+      
+    } catch (err) {
+      console.error('❌ Failed to update claim status:', err);
+      setError(err instanceof Error ? err.message : 'Failed to update claim status');
+    } finally {
+      setUpdatingClaim(null);
+    }
+  }
+
+  const handleStatusEdit = (claimId: string) => {
+    setEditingStatus(editingStatus === claimId ? null : claimId);
   }
 
   useEffect(() => {
@@ -133,7 +172,6 @@ export const ClaimsTable: React.FC = () => {
 
   const statusBadgeClasses = {
     pending: 'bg-slate-100 text-slate-800 dark:bg-slate-700/50 dark:text-slate-300',
-    under_review: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300',
     in_review: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300',
     approved: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300',
     rejected: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
@@ -141,11 +179,81 @@ export const ClaimsTable: React.FC = () => {
 
   const statusLabels = {
     pending: 'Pending',
-    under_review: 'Under Review',
     in_review: 'In Review',
     approved: 'Approved',
     rejected: 'Rejected',
   }
+
+  const statusOptions = [
+    { value: 'pending', label: 'Pending', icon: ClockIcon },
+    { value: 'in_review', label: 'In Review', icon: PencilIcon },
+    { value: 'approved', label: 'Approved', icon: CheckIcon },
+    { value: 'rejected', label: 'Rejected', icon: XMarkIcon },
+  ]
+
+  const StatusDropdown: React.FC<{ claim: Claim; onUpdate: (status: string) => void; isUpdating: boolean }> = ({ 
+    claim, 
+    onUpdate, 
+    isUpdating 
+  }) => {
+    const [isOpen, setIsOpen] = useState(false);
+    
+    return (
+      <div className="relative">
+        <button
+          onClick={() => setIsOpen(!isOpen)}
+          disabled={isUpdating}
+          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium transition-all duration-200 hover:ring-2 hover:ring-blue-200 dark:hover:ring-blue-800 ${
+            statusBadgeClasses[claim.status as Status]
+          } ${isUpdating ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:shadow-sm'}`}
+        >
+          {isUpdating ? (
+            <>
+              <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-current mr-1"></div>
+              Updating...
+            </>
+          ) : (
+            <>
+              {statusLabels[claim.status as Status] || claim.status}
+              <ChevronDownIcon className="w-3 h-3 ml-1" />
+            </>
+          )}
+        </button>
+        
+        {isOpen && !isUpdating && (
+          <>
+            <div 
+              className="fixed inset-0 z-10" 
+              onClick={() => setIsOpen(false)}
+            ></div>
+            <div className="absolute right-0 z-20 mt-1 w-40 bg-white dark:bg-slate-800 rounded-md shadow-lg border border-slate-200 dark:border-slate-700 py-1">
+              {statusOptions.map((option) => {
+                const Icon = option.icon;
+                return (
+                  <button
+                    key={option.value}
+                    onClick={() => {
+                      onUpdate(option.value);
+                      setIsOpen(false);
+                    }}
+                    className={`w-full text-left px-3 py-2 text-sm hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center space-x-2 ${
+                      option.value === claim.status ? 'bg-slate-50 dark:bg-slate-700' : ''
+                    }`}
+                  >
+                    <Icon className="w-4 h-4 text-slate-400" />
+                    <span className="text-slate-700 dark:text-slate-300">{option.label}</span>
+                    {option.value === claim.status && (
+                      <CheckIcon className="w-4 h-4 text-green-500 ml-auto" />
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </>
+        )}
+      </div>
+    );
+  };
 
   if (loading) {
     return (
@@ -334,9 +442,11 @@ export const ClaimsTable: React.FC = () => {
                   </span>
                 </td>
                 <td className="px-4 py-4 whitespace-nowrap">
-                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusBadgeClasses[claim.status as Status]}`}>
-                    {statusLabels[claim.status as Status] || claim.status}
-                  </span>
+                  <StatusDropdown
+                    claim={claim}
+                    onUpdate={(newStatus) => updateClaimStatus(claim.id, newStatus)}
+                    isUpdating={updatingClaim === claim.id}
+                  />
                 </td>
                 <td className="px-4 py-4 whitespace-nowrap text-sm text-slate-700 dark:text-slate-300">
                   {claim.claim_type}
@@ -345,9 +455,13 @@ export const ClaimsTable: React.FC = () => {
                   {claim.reviewer || 'Unassigned'}
                 </td>
                 <td className="px-4 py-4 whitespace-nowrap text-right text-sm font-medium">
-                  <button className="text-slate-400 hover:text-slate-900 dark:hover:text-white">
-                    <EllipsisHorizontalIcon className="w-5 h-5" />
-                    <span className="sr-only">Options</span>
+                  <button 
+                    onClick={() => handleStatusEdit(claim.id)}
+                    className="text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                    title="Edit claim status"
+                  >
+                    <PencilIcon className="w-5 h-5" />
+                    <span className="sr-only">Edit claim status</span>
                   </button>
                 </td>
               </tr>

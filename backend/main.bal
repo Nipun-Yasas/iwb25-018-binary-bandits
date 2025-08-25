@@ -593,15 +593,15 @@ function broadcastEvent(string eventType, json payload) returns error? {
 }
 
 // Specialized broadcast functions for different event types
-function broadcastClaimUpdate(json claimData) returns error? {
+public function broadcastClaimUpdate(json claimData) returns error? {
     return broadcastEvent("claim_updated", claimData);
 }
 
-function broadcastFraudAlert(json alertData) returns error? {
+public function broadcastFraudAlert(json alertData) returns error? {
     return broadcastEvent("fraud_alert_created", alertData);
 }
 
-function broadcastFraudAlertDismissed(json alertData) returns error? {
+public function broadcastFraudAlertDismissed(json alertData) returns error? {
     return broadcastEvent("fraud_alert_dismissed", alertData);
 }
 

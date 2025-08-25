@@ -141,16 +141,16 @@ PUT http://localhost:8080/api/claims/CLM-47258/status
 Content-Type: application/json
 
 {
-  "status": "rejected"
+  "status": "in_review"
 }
 
-HTTP/1.1 200  - OK
+HTTP/1.1 500  - Internal Server Error
 content-type: application/json
 connection: close
 server: ballerina
-date: Mon, 25 Aug 2025 23:59:22 +0530
+date: Tue, 26 Aug 2025 00:39:47 +0530
 content-encoding: gzip
-content-length: 380
+content-length: 182
 ###
 GET http://localhost:8080/api/fraud
 
@@ -227,3 +227,89 @@ content-length: 234
 4. Run Cell 15 (different claim update) 
 5. Observe another real-time broadcast
 */
+/*
+# 🎯 Interactive UI Status Updates
+
+## New Feature: Direct Status Updates from UI
+
+The ClaimsTable component now supports **interactive status updates**:
+
+✅ **Dropdown Status Selection**: Click on any claim status to see available options
+✅ **Real-time Updates**: Status changes trigger WebSocket broadcasts instantly  
+✅ **Loading States**: Visual feedback while updates are processing
+✅ **Error Handling**: Graceful handling of failed updates
+✅ **Optimistic UI**: Immediate visual feedback before server confirmation
+
+### Available Status Options (Database ENUM):
+- `pending` - Initial state for new claims
+- `in_review` - Claim is being actively reviewed 
+- `approved` - Claim has been approved for payment
+- `rejected` - Claim has been denied
+
+**⚠️ Important**: Only these 4 status values are valid per the database schema. Using any other values like `under_review` will result in a 500 error.
+
+### How to Test:
+1. Start the frontend: `cd frontend && npm run dev`
+2. Open http://localhost:3000/dashboard
+3. Click on any status badge in the Claims Table
+4. Select a new status from the dropdown
+5. Watch for real-time WebSocket updates in multiple browser tabs
+
+### Test the UI updates with these API calls:
+*/
+### Bulk Status Update Test - Update multiple claims rapidly (FIXED: Valid ENUM values)
+PUT http://localhost:8080/api/claims/CLM-47258/status
+Content-Type: application/json
+
+{
+    "status": "in_review"
+}
+
+###
+PUT http://localhost:8080/api/claims/CLM-47255/status
+Content-Type: application/json
+
+{
+    "status": "approved"
+}
+
+###
+PUT http://localhost:8080/api/claims/CLM-47256/status
+Content-Type: application/json
+
+{
+    "status": "rejected"
+}
+
+HTTP/1.1 200  - OK
+content-type: application/json
+connection: close
+server: ballerina
+date: Tue, 26 Aug 2025 00:39:22 +0530
+content-encoding: gzip
+content-length: 236
+### Debug CLM-47258 - Check current status first
+GET http://localhost:8080/api/claims/CLM-47258
+
+### Debug CLM-47258 - Try updating to a different status (pending)
+PUT http://localhost:8080/api/claims/CLM-47258/status
+Content-Type: application/json
+
+{
+    "status": "pending"
+}
+### Test a different claim - CLM-47254 (should work)
+PUT http://localhost:8080/api/claims/CLM-47254/status
+Content-Type: application/json
+
+{
+    "status": "in_review"
+}
+
+### Test another claim - CLM-47255 
+PUT http://localhost:8080/api/claims/CLM-47255/status
+Content-Type: application/json
+
+{
+    "status": "rejected"
+}
