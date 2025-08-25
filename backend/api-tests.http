@@ -148,9 +148,9 @@ HTTP/1.1 200  - OK
 content-type: application/json
 connection: close
 server: ballerina
-date: Mon, 25 Aug 2025 19:21:25 +0530
+date: Mon, 25 Aug 2025 23:59:22 +0530
 content-encoding: gzip
-content-length: 377
+content-length: 380
 ###
 GET http://localhost:8080/api/fraud
 
@@ -172,15 +172,15 @@ date: Mon, 25 Aug 2025 18:24:17 +0530
 content-encoding: gzip
 content-length: 295
 ###
-PUT http://localhost:8080/api/fraud/ALERT-002/dismiss
+PUT http://localhost:8080/api/fraud/ALERT-001/dismiss
 
 HTTP/1.1 200  - OK
 content-type: application/json
 connection: close
 server: ballerina
-date: Mon, 25 Aug 2025 18:23:32 +0530
+date: Tue, 26 Aug 2025 00:00:57 +0530
 content-encoding: gzip
-content-length: 295
+content-length: 310
 ###
 GET http://localhost:8080/api/tables
 
@@ -191,3 +191,39 @@ server: ballerina
 date: Mon, 25 Aug 2025 18:23:37 +0530
 content-encoding: gzip
 content-length: 234
+/*
+# 🔌 WebSocket Real-time Testing
+
+## What to observe when running claim updates:
+
+**Before running the claim update API:**
+1. Open the WebSocket test page: `websocket-test.html` in your browser
+2. Click "Connect" to establish WebSocket connection to `ws://localhost:8082/ws`
+3. You should see connection established with a client ID
+
+**When you run the claim update API (Cell 14):**
+1. The API will return success response with updated claim data
+2. **SIMULTANEOUSLY** - WebSocket will broadcast the update to all connected clients
+3. In the WebSocket test page, you'll see a real-time message like:
+   ```json
+   {
+     "type": "claim_updated", 
+     "payload": { /* updated claim data */ },
+     "timestamp": "...",
+     "server": "insurance-claims-dashboard"
+   }
+   ```
+
+**What this demonstrates:**
+- ✅ Bi-directional real-time communication
+- ✅ API changes trigger instant WebSocket broadcasts  
+- ✅ Multiple clients receive updates simultaneously
+- ✅ Frontend can update UI without polling
+
+**Try this test flow:**
+1. Connect WebSocket test page
+2. Run Cell 14 (claim status update) below
+3. Watch both HTTP response AND WebSocket message arrive
+4. Run Cell 15 (different claim update) 
+5. Observe another real-time broadcast
+*/

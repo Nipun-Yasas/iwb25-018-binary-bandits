@@ -116,6 +116,14 @@ public function dismissFraudAlert(mysql:Client currentClient, string alertId) re
             // Return the updated alert
             json|error updatedAlert = getFraudAlertById(currentClient, alertId);
             if updatedAlert is json {
+                // Broadcast real-time update to WebSocket clients
+                error? broadcastResult = broadcastFraudAlertDismissed(updatedAlert);
+                if broadcastResult is error {
+                    log:printError("⚠️ Failed to broadcast fraud alert dismissal: " + broadcastResult.message());
+                } else {
+                    log:printInfo("📡 Fraud alert dismissal broadcasted to WebSocket clients");
+                }
+                
                 return {
                     "message": "Fraud alert dismissed successfully",
                     "alert_id": alertId,
@@ -156,9 +164,19 @@ public function createFraudAlert(mysql:Client currentClient, string claimId, str
             check resultStream.close();
             
             if createdAlert is record {} {
+                json alertJson = createdAlert.toJson();
+                
+                // Broadcast real-time update to WebSocket clients
+                error? broadcastResult = broadcastFraudAlert(alertJson);
+                if broadcastResult is error {
+                    log:printError("⚠️ Failed to broadcast new fraud alert: " + broadcastResult.message());
+                } else {
+                    log:printInfo("📡 New fraud alert broadcasted to WebSocket clients");
+                }
+                
                 return {
                     "message": "Fraud alert created successfully",
-                    "alert": createdAlert.toJson(),
+                    "alert": alertJson,
                     "created_at": time:utcNow().toString()
                 };
             }

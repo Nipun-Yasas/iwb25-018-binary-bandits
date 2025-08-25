@@ -8,6 +8,7 @@ import {
   EllipsisHorizontalIcon,
 } from '@heroicons/react/24/outline'
 import { claimsApi, type Claim } from '@/lib/api'
+import { useClaimUpdates, useWebSocketConnection } from '@/lib/useRealTime'
 
 type RiskLevel = 'low' | 'medium' | 'high' | 'critical'
 type Status = 'pending' | 'approved' | 'rejected' | 'under_review' | 'in_review'
@@ -20,45 +21,59 @@ export const ClaimsTable: React.FC = () => {
   const [sortField, setSortField] = useState<keyof Claim>('created_at')
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc')
 
-  useEffect(() => {
-    const fetchClaims = async () => {
-      try {
-        setLoading(true);
-        const response = await claimsApi.getAllClaims();
-        console.log('📊 Full claims response:', response);
-        
-        // Extract the claims array from the response
-        let claimsData: Claim[] = [];
-        
-        if (response.claims && Array.isArray(response.claims)) {
-          // Backend returns { claims: [...] } 
-          claimsData = response.claims;
-        } else if (response.data && Array.isArray(response.data)) {
-          // Fallback: { data: [...] }
-          claimsData = response.data;
-        } else if (response && Array.isArray(response)) {
-          // Fallback: direct array
-          claimsData = response;
-        } else {
-          console.warn('⚠️ Unexpected response structure:', response);
-          claimsData = [];
-        }
-        
-        console.log('📋 Processed claims data:', claimsData);
-        setClaims(claimsData);
-        setError(null);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to fetch claims');
-        console.error('Error fetching claims:', err);
-        setClaims([]); // Set empty array on error
-      } finally {
-        setLoading(false);
-      }
-    };
+  // WebSocket integration for real-time updates
+  const wsConnection = useWebSocketConnection()
+  const claimUpdates = useClaimUpdates()
 
+  // Handle real-time claim updates
+  useEffect(() => {
+    claimUpdates.onClaimUpdate((updatedClaimData) => {
+      console.log('🔄 Real-time claim update received:', updatedClaimData)
+      
+      // Re-fetch all claims to ensure consistency
+      fetchClaims()
+    })
+  }, [claimUpdates])
+
+  const fetchClaims = async () => {
+    try {
+      setLoading(true);
+      const response = await claimsApi.getAllClaims();
+      console.log('📊 Full claims response:', response);
+      
+      // Extract the claims array from the response
+      let claimsData: Claim[] = [];
+      
+      if (response.claims && Array.isArray(response.claims)) {
+        // Backend returns { claims: [...] } 
+        claimsData = response.claims;
+      } else if (response.data && Array.isArray(response.data)) {
+        // Fallback: { data: [...] }
+        claimsData = response.data;
+      } else if (response && Array.isArray(response)) {
+        // Fallback: direct array
+        claimsData = response;
+      } else {
+        console.warn('⚠️ Unexpected response structure:', response);
+        claimsData = [];
+      }
+      
+      console.log('📋 Processed claims data:', claimsData);
+      setClaims(claimsData);
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to fetch claims');
+      console.error('Error fetching claims:', err);
+      setClaims([]); // Set empty array on error
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
     fetchClaims();
     
-    // Refresh data every 30 seconds
+    // Refresh data every 30 seconds (but we'll now rely more on WebSocket updates)
     const interval = setInterval(fetchClaims, 30000);
     return () => clearInterval(interval);
   }, []);
@@ -162,8 +177,27 @@ export const ClaimsTable: React.FC = () => {
 
   return (
     <div className="bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm rounded-xl border border-white/20 dark:border-slate-700/30 shadow-lg">
-      {/* Search and filter */}
+      {/* Search and filter with WebSocket status */}
       <div className="p-4 border-b border-slate-200 dark:border-slate-700/50">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+            Claims Management
+          </h3>
+          
+          {/* WebSocket Connection Status */}
+          <div className="flex items-center space-x-2 text-sm">
+            <div className={`w-2 h-2 rounded-full ${wsConnection.isConnected ? 'bg-green-500' : 'bg-red-500'}`}></div>
+            <span className={`${wsConnection.isConnected ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+              {wsConnection.isConnected ? 'Real-time Connected' : 'Offline'}
+            </span>
+            {claimUpdates.updateCount > 0 && (
+              <span className="bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-200 px-2 py-1 rounded-full text-xs">
+                {claimUpdates.updateCount} updates
+              </span>
+            )}
+          </div>
+        </div>
+        
         <div className="relative">
           <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
             <MagnifyingGlassIcon className="w-5 h-5 text-slate-400" />

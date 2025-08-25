@@ -6,6 +6,7 @@
 import ballerina/http;
 import ballerina/log;
 import ballerina/time;
+import ballerina/websocket;
 import ballerinax/mysql;
 
 
@@ -58,7 +59,7 @@ service /api on httpListener {
     // 🧪 Basic Test Endpoint
     @http:ResourceConfig {
         cors: {
-            allowOrigins: ["http://localhost:3000"],
+            allowOrigins: ["*"],
             allowCredentials: false,
             allowHeaders: ["Content-Type"],
             allowMethods: ["GET"]
@@ -390,8 +391,8 @@ resource function put claims/[string claimId]/status(@http:Payload json payload)
     // PUT /api/fraud/{id}/dismiss - Dismiss fraud alert
     @http:ResourceConfig {
         cors: {
-            allowOrigins: ["http://localhost:3000"],
-            allowCredentials: true,
+            allowOrigins: ["*"],
+            allowCredentials: false,
             allowHeaders: ["Authorization", "Content-Type"],
             allowMethods: ["PUT", "OPTIONS"]
         }
@@ -451,4 +452,159 @@ resource function put claims/[string claimId]/status(@http:Payload json payload)
             };
         }
     }
+}
+
+// =============================================================================
+// WEBSOCKET SERVICE FOR REAL-TIME UPDATES
+// =============================================================================
+
+// Global map to store connected WebSocket clients
+final map<websocket:Caller> connectedClients = {};
+
+// WebSocket listener on port 8082 (separate from main API port 8080)
+listener websocket:Listener wsListener = new(8082);
+
+// WebSocket service endpoint
+service /ws on wsListener {
+
+    // Handle new WebSocket connection
+    resource function get .() returns websocket:Service|websocket:UpgradeError {
+        log:printInfo("🔌 New WebSocket connection request received");
+        return new WebSocketService();
+    }
+}
+
+// WebSocket service class to handle client lifecycle
+service class WebSocketService {
+    *websocket:Service;
+    
+    private string clientId = "";
+
+    // Client connected successfully
+    remote function onOpen(websocket:Caller caller) returns websocket:Error? {
+        // Generate unique client ID
+        self.clientId = "client-" + time:utcNow().toString().substring(0, 13);
+        
+        // Store client connection
+        lock {
+            connectedClients[self.clientId] = caller;
+        }
+        
+        log:printInfo("✅ WebSocket client connected: " + self.clientId + " (Total clients: " + connectedClients.length().toString() + ")");
+        
+        // Send welcome message to client
+        json welcomeMsg = {
+            "type": "connection_established",
+            "payload": {
+                "client_id": self.clientId,
+                "message": "Connected to Insurance Claims Dashboard WebSocket",
+                "timestamp": time:utcNow().toString()
+            }
+        };
+        
+        check caller->writeTextMessage(welcomeMsg.toString());
+        return;
+    }
+
+    // Handle incoming messages from client
+    remote function onTextMessage(websocket:Caller caller, string text) returns websocket:Error? {
+        log:printInfo("📨 WebSocket message received from " + self.clientId + ": " + text);
+        
+        // Handle ping messages
+        if text == "ping" {
+            check caller->writeTextMessage("pong");
+            log:printInfo("🏓 Sent pong response to " + self.clientId);
+        }
+        
+        return;
+    }
+
+    // Handle client disconnection
+    remote function onClose(websocket:Caller caller, int statusCode, string reason) returns websocket:Error? {
+        // Remove client from connected clients map
+        lock {
+            _ = connectedClients.remove(self.clientId);
+        }
+        
+        log:printInfo("👋 WebSocket client disconnected: " + self.clientId + " (Remaining clients: " + connectedClients.length().toString() + ")");
+        return;
+    }
+
+    // Handle WebSocket errors
+    remote function onError(websocket:Caller caller, websocket:Error err) returns websocket:Error? {
+        log:printError("🚨 WebSocket error for client " + self.clientId + ": " + err.message());
+        
+        // Remove client on error
+        lock {
+            _ = connectedClients.remove(self.clientId);
+        }
+        
+        return;
+    }
+}
+
+// =============================================================================
+// WEBSOCKET BROADCAST FUNCTIONS
+// =============================================================================
+
+// Main broadcast function - sends events to all connected clients
+function broadcastEvent(string eventType, json payload) returns error? {
+    log:printInfo("📢 Broadcasting event: " + eventType + " to " + connectedClients.length().toString() + " clients");
+    
+    // Create standardized message format
+    json message = {
+        "type": eventType,
+        "payload": payload,
+        "timestamp": time:utcNow().toString(),
+        "server": "insurance-claims-dashboard"
+    };
+    
+    string messageText = message.toString();
+    int successCount = 0;
+    int errorCount = 0;
+    
+    // Send to all connected clients
+    lock {
+        foreach var clientId in connectedClients.keys() {
+            websocket:Caller? caller = connectedClients[clientId];
+            if caller is websocket:Caller {
+                websocket:Error? sendResult = caller->writeTextMessage(messageText);
+                if sendResult is websocket:Error {
+                    log:printError("❌ Failed to send message to client " + clientId + ": " + sendResult.message());
+                    errorCount += 1;
+                    
+                    // Remove failed client from map
+                    _ = connectedClients.remove(clientId);
+                } else {
+                    successCount += 1;
+                }
+            }
+        }
+    }
+    
+    log:printInfo("✅ Broadcast complete - Success: " + successCount.toString() + ", Errors: " + errorCount.toString());
+    
+    // Return error if no clients received the message
+    if successCount == 0 && errorCount > 0 {
+        return error("Failed to broadcast to any clients");
+    }
+    
+    return;
+}
+
+// Specialized broadcast functions for different event types
+function broadcastClaimUpdate(json claimData) returns error? {
+    return broadcastEvent("claim_updated", claimData);
+}
+
+function broadcastFraudAlert(json alertData) returns error? {
+    return broadcastEvent("fraud_alert_created", alertData);
+}
+
+function broadcastFraudAlertDismissed(json alertData) returns error? {
+    return broadcastEvent("fraud_alert_dismissed", alertData);
+}
+
+function broadcastDashboardStats(json statsData) returns error? {
+    return broadcastEvent("dashboard_stats", statsData);
 }

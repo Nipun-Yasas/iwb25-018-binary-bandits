@@ -98,6 +98,14 @@ public function updateClaimStatus(mysql:Client dbClient, string claimId, string 
             // Return the updated claim
             json|error updatedClaim = getClaimById(dbClient, claimId);
             if updatedClaim is json {
+                // Broadcast real-time update to WebSocket clients
+                error? broadcastResult = broadcastClaimUpdate(updatedClaim);
+                if broadcastResult is error {
+                    log:printError("⚠️ Failed to broadcast claim update: " + broadcastResult.message());
+                } else {
+                    log:printInfo("📡 Claim update broadcasted to WebSocket clients");
+                }
+                
                 return {
                     "message": "Claim status updated successfully",
                     "claim_id": claimId,

@@ -10,6 +10,7 @@ import {
   ArrowDownIcon
 } from '@heroicons/react/24/outline'
 import { dashboardApi, type DashboardStats } from '@/lib/api'
+import { useDashboardStats } from '@/lib/useRealTime'
 
 interface StatCardProps {
   title: string
@@ -117,37 +118,50 @@ export const StatsCards: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        setLoading(true);
-        console.log('📊 Fetching dashboard stats...');
-        const response = await dashboardApi.getStats();
-        console.log('📊 Full dashboard response:', response);
-        
-        // The backend returns stats directly in response.data, but if that doesn't exist,
-        // use the response object itself (which contains the stats)
-        const statsData = response.data || response;
-        
-        if (statsData && statsData.summary) {
-          setStats(statsData);
-          setError(null);
-          console.log('✅ Dashboard stats set successfully:', statsData);
-        } else {
-          console.warn('⚠️ No stats data found in response:', response);
-          setError('No dashboard data received');
-        }
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to fetch dashboard stats');
-        console.error('Error fetching dashboard stats:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
+  // WebSocket integration for real-time updates
+  const dashboardStatsHook = useDashboardStats()
 
+  // Handle real-time dashboard stats updates
+  useEffect(() => {
+    dashboardStatsHook.onStatsUpdate((updatedStatsData) => {
+      console.log('📊 Real-time dashboard stats update received:', updatedStatsData)
+      
+      // Re-fetch all stats to ensure consistency
+      fetchStats()
+    })
+  }, [dashboardStatsHook])
+
+  const fetchStats = async () => {
+    try {
+      setLoading(true);
+      console.log('📊 Fetching dashboard stats...');
+      const response = await dashboardApi.getStats();
+      console.log('📊 Full dashboard response:', response);
+      
+      // The backend returns stats directly in response.data, but if that doesn't exist,
+      // use the response object itself (which contains the stats)
+      const statsData = response.data || response;
+      
+      if (statsData && (statsData as DashboardStats).summary) {
+        setStats(statsData as DashboardStats);
+        setError(null);
+        console.log('✅ Dashboard stats set successfully:', statsData);
+      } else {
+        console.warn('⚠️ No stats data found in response:', response);
+        setError('No dashboard data received');
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to fetch dashboard stats');
+      console.error('Error fetching dashboard stats:', err);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
     fetchStats();
     
-    // Refresh data every 30 seconds
+    // Refresh data every 30 seconds (but we'll now rely more on WebSocket updates)
     const interval = setInterval(fetchStats, 30000);
     return () => clearInterval(interval);
   }, []);
