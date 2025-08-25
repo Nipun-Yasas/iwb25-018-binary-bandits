@@ -180,9 +180,9 @@ service /api on httpListener {
     // 📊 Dashboard Statistics Endpoint
     @http:ResourceConfig {
         cors: {
-            allowOrigins: ["http://localhost:3000"],
-            allowCredentials: true,
-            allowHeaders: ["Authorization", "Content-Type"],
+            allowOrigins: ["*"],
+            allowCredentials: false,
+            allowHeaders: ["Authorization", "Content-Type", "Accept"],
             allowMethods: ["GET", "OPTIONS"]
         }
     }

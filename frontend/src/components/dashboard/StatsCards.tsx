@@ -1,6 +1,6 @@
 'use client'
 
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import { 
   ArrowTrendingUpIcon as TrendingUpIcon, 
   ShieldCheckIcon, 
@@ -9,6 +9,7 @@ import {
   ArrowUpIcon,
   ArrowDownIcon
 } from '@heroicons/react/24/outline'
+import { dashboardApi, type DashboardStats } from '@/lib/api'
 
 interface StatCardProps {
   title: string
@@ -112,48 +113,132 @@ const StatCard: React.FC<StatCardProps> = ({
 }
 
 export const StatsCards: React.FC = () => {
-  const stats = [
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        setLoading(true);
+        console.log('📊 Fetching dashboard stats...');
+        const response = await dashboardApi.getStats();
+        console.log('📊 Full dashboard response:', response);
+        
+        // The backend returns stats directly in response.data, but if that doesn't exist,
+        // use the response object itself (which contains the stats)
+        const statsData = response.data || response;
+        
+        if (statsData && statsData.summary) {
+          setStats(statsData);
+          setError(null);
+          console.log('✅ Dashboard stats set successfully:', statsData);
+        } else {
+          console.warn('⚠️ No stats data found in response:', response);
+          setError('No dashboard data received');
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to fetch dashboard stats');
+        console.error('Error fetching dashboard stats:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStats();
+    
+    // Refresh data every 30 seconds
+    const interval = setInterval(fetchStats, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {Array.from({ length: 4 }).map((_, index) => (
+          <div key={index} className="h-32 bg-gray-200 dark:bg-gray-700 rounded-2xl animate-pulse"></div>
+        ))}
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="col-span-full p-6 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-2xl">
+          <p className="text-red-600 dark:text-red-400">Error: {error}</p>
+          <p className="text-sm text-red-500 dark:text-red-300 mt-1">
+            Make sure the backend server is running on http://localhost:8080
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!stats) {
+    return <div>No data available</div>;
+  }
+
+  // Calculate total claims from summary
+  const totalClaims = stats.summary?.total_claims || 0;
+  
+  // Get fraud alert counts  
+  const totalFraudAlerts = stats.summary?.total_fraud_alerts || 0;
+  
+  // Get recent activity data (use the actual fields from backend)
+  const recentClaims30Days = stats.recent_activity?.recent_claims_30_days || 0;
+  const recentFraudAlerts30Days = stats.recent_activity?.recent_fraud_alerts_30_days || 0;
+  
+  // Calculate some derived metrics from claims_by_status
+  const claimsByStatus = stats.claims_by_status?.by_status || [];
+  const totalAmount = claimsByStatus.reduce((sum, item) => sum + (item.total_amount || 0), 0);
+  const avgAmount = totalClaims > 0 ? totalAmount / totalClaims : 0;
+  
+  // Calculate approved claims count
+  const approvedClaims = claimsByStatus.find(item => item.status === 'approved')?.count || 0;
+  
+  const statCards = [
     {
       title: 'Total Claims',
-      value: '1,247',
-      change: '+12%',
+      value: totalClaims.toLocaleString(),
+      change: recentClaims30Days > 0 ? `+${recentClaims30Days}` : '0',
       icon: <TrendingUpIcon className="w-6 h-6" />,
       color: 'blue' as const,
-      description: 'Total number of claims processed this month',
-      isImprovement: true
+      description: `${recentClaims30Days} new claims in last 30 days`,
+      isImprovement: recentClaims30Days >= 0
     },
     {
       title: 'Fraud Detected',
-      value: '23',
-      change: '-8%',
+      value: totalFraudAlerts,
+      change: recentFraudAlerts30Days > 0 ? `+${recentFraudAlerts30Days}` : '0',
       icon: <ShieldCheckIcon className="w-6 h-6" />,
       color: 'red' as const,
-      description: 'Suspicious claims flagged by AI detection system',
-      isImprovement: true
+      description: `${recentFraudAlerts30Days} new alerts in last 30 days`,
+      isImprovement: recentFraudAlerts30Days === 0
     },
     {
-      title: 'Processing Time',
-      value: '2.3 days',
-      change: '-15%',
+      title: 'Approved Claims',
+      value: approvedClaims,
+      change: approvedClaims > 0 ? '+5%' : '0%',
       icon: <ClockIcon className="w-6 h-6" />,
       color: 'green' as const,
-      description: 'Average time to process and review claims',
+      description: 'Claims approved and processed',
       isImprovement: true
     },
     {
-      title: 'Accuracy Rate',
-      value: '98.5%',
+      title: 'Average Amount',
+      value: `$${Math.round(avgAmount).toLocaleString()}`,
       change: '+2.1%',
       icon: <CheckCircleIcon className="w-6 h-6" />,
       color: 'purple' as const,
-      description: 'AI model accuracy in fraud detection',
+      description: `Based on ${totalClaims} total claims`,
       isImprovement: true
     }
   ]
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-      {stats.map((stat, index) => (
+      {statCards.map((stat, index) => (
         <StatCard key={index} {...stat} />
       ))}
     </div>

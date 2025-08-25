@@ -1,89 +1,67 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import {
   MagnifyingGlassIcon,
   ChevronDownIcon,
   ChevronUpIcon,
   EllipsisHorizontalIcon,
 } from '@heroicons/react/24/outline'
+import { claimsApi, type Claim } from '@/lib/api'
 
 type RiskLevel = 'low' | 'medium' | 'high' | 'critical'
-type Status = 'pending' | 'in_review' | 'approved' | 'rejected'
-
-interface Claim {
-  id: string
-  date: string
-  amount: number
-  riskLevel: RiskLevel
-  status: Status
-  claimType: string
-  reviewer: string
-}
-
-// Sample data
-const sampleClaims: Claim[] = [
-  {
-    id: 'CLM-47291',
-    date: '2025-08-15',
-    amount: 2450.75,
-    riskLevel: 'high',
-    status: 'in_review',
-    claimType: 'Medical',
-    reviewer: 'Sarah Johnson'
-  },
-  {
-    id: 'CLM-47285',
-    date: '2025-08-14',
-    amount: 890.50,
-    riskLevel: 'low',
-    status: 'approved',
-    claimType: 'Dental',
-    reviewer: 'Michael Chen'
-  },
-  {
-    id: 'CLM-47278',
-    date: '2025-08-13',
-    amount: 5200.00,
-    riskLevel: 'medium',
-    status: 'pending',
-    claimType: 'Medical',
-    reviewer: 'Unassigned'
-  },
-  {
-    id: 'CLM-47269',
-    date: '2025-08-12',
-    amount: 1735.25,
-    riskLevel: 'low',
-    status: 'approved',
-    claimType: 'Vision',
-    reviewer: 'Lisa Thompson'
-  },
-  {
-    id: 'CLM-47258',
-    date: '2025-08-11',
-    amount: 12850.75,
-    riskLevel: 'critical',
-    status: 'rejected',
-    claimType: 'Surgery',
-    reviewer: 'David Wilson'
-  },
-  {
-    id: 'CLM-47254',
-    date: '2025-08-10',
-    amount: 450.00,
-    riskLevel: 'low',
-    status: 'approved',
-    claimType: 'Prescription',
-    reviewer: 'Michael Chen'
-  }
-]
+type Status = 'pending' | 'approved' | 'rejected' | 'under_review' | 'in_review'
 
 export const ClaimsTable: React.FC = () => {
-  const [claims] = useState<Claim[]>(sampleClaims)
+  const [claims, setClaims] = useState<Claim[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
-  const [sortField, setSortField] = useState<keyof Claim>('date')
+  const [sortField, setSortField] = useState<keyof Claim>('created_at')
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc')
+
+  useEffect(() => {
+    const fetchClaims = async () => {
+      try {
+        setLoading(true);
+        const response = await claimsApi.getAllClaims();
+        console.log('📊 Full claims response:', response);
+        
+        // Extract the claims array from the response
+        let claimsData: Claim[] = [];
+        
+        if (response.claims && Array.isArray(response.claims)) {
+          // Backend returns { claims: [...] } 
+          claimsData = response.claims;
+        } else if (response.data && Array.isArray(response.data)) {
+          // Fallback: { data: [...] }
+          claimsData = response.data;
+        } else if (response && Array.isArray(response)) {
+          // Fallback: direct array
+          claimsData = response;
+        } else {
+          console.warn('⚠️ Unexpected response structure:', response);
+          claimsData = [];
+        }
+        
+        console.log('📋 Processed claims data:', claimsData);
+        setClaims(claimsData);
+        setError(null);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to fetch claims');
+        console.error('Error fetching claims:', err);
+        setClaims([]); // Set empty array on error
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchClaims();
+    
+    // Refresh data every 30 seconds
+    const interval = setInterval(fetchClaims, 30000);
+    return () => clearInterval(interval);
+  }, []);
 
   const handleSort = (field: keyof Claim) => {
     if (sortField === field) {
@@ -94,14 +72,15 @@ export const ClaimsTable: React.FC = () => {
     }
   }
 
-  const filteredClaims = claims
+  // Ensure claims is always an array before filtering
+  const filteredClaims = (claims || [])
     .filter((claim) => {
       if (!searchTerm) return true
       const searchLower = searchTerm.toLowerCase()
       return (
         claim.id.toLowerCase().includes(searchLower) ||
-        claim.claimType.toLowerCase().includes(searchLower) ||
-        claim.reviewer.toLowerCase().includes(searchLower)
+        claim.claim_type.toLowerCase().includes(searchLower) ||
+        (claim.reviewer && claim.reviewer.toLowerCase().includes(searchLower))
       )
     })
     .sort((a, b) => {
@@ -139,6 +118,7 @@ export const ClaimsTable: React.FC = () => {
 
   const statusBadgeClasses = {
     pending: 'bg-slate-100 text-slate-800 dark:bg-slate-700/50 dark:text-slate-300',
+    under_review: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300',
     in_review: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300',
     approved: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300',
     rejected: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
@@ -146,9 +126,38 @@ export const ClaimsTable: React.FC = () => {
 
   const statusLabels = {
     pending: 'Pending',
+    under_review: 'Under Review',
     in_review: 'In Review',
     approved: 'Approved',
     rejected: 'Rejected',
+  }
+
+  if (loading) {
+    return (
+      <div className="bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm rounded-xl border border-white/20 dark:border-slate-700/30 shadow-lg p-8">
+        <div className="animate-pulse space-y-4">
+          <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/4"></div>
+          <div className="space-y-2">
+            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded"></div>
+            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-5/6"></div>
+            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-4/6"></div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm rounded-xl border border-white/20 dark:border-slate-700/30 shadow-lg p-8">
+        <div className="text-center">
+          <p className="text-red-600 dark:text-red-400">Error: {error}</p>
+          <p className="text-sm text-red-500 dark:text-red-300 mt-1">
+            Make sure the backend server is running on http://localhost:8080
+          </p>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -189,11 +198,11 @@ export const ClaimsTable: React.FC = () => {
               </th>
               <th 
                 className="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider cursor-pointer"
-                onClick={() => handleSort('date')}
+                onClick={() => handleSort('submission_date')}
               >
                 <div className="flex items-center space-x-1">
                   <span>Date</span>
-                  {sortField === 'date' && (
+                  {sortField === 'submission_date' && (
                     sortDirection === 'asc' ? 
                       <ChevronUpIcon className="w-4 h-4" /> : 
                       <ChevronDownIcon className="w-4 h-4" />
@@ -215,11 +224,11 @@ export const ClaimsTable: React.FC = () => {
               </th>
               <th 
                 className="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider cursor-pointer"
-                onClick={() => handleSort('riskLevel')}
+                onClick={() => handleSort('risk_level')}
               >
                 <div className="flex items-center space-x-1">
                   <span>Risk Level</span>
-                  {sortField === 'riskLevel' && (
+                  {sortField === 'risk_level' && (
                     sortDirection === 'asc' ? 
                       <ChevronUpIcon className="w-4 h-4" /> : 
                       <ChevronDownIcon className="w-4 h-4" />
@@ -241,11 +250,11 @@ export const ClaimsTable: React.FC = () => {
               </th>
               <th 
                 className="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider cursor-pointer"
-                onClick={() => handleSort('claimType')}
+                onClick={() => handleSort('claim_type')}
               >
                 <div className="flex items-center space-x-1">
                   <span>Type</span>
-                  {sortField === 'claimType' && (
+                  {sortField === 'claim_type' && (
                     sortDirection === 'asc' ? 
                       <ChevronUpIcon className="w-4 h-4" /> : 
                       <ChevronDownIcon className="w-4 h-4" />
@@ -280,26 +289,26 @@ export const ClaimsTable: React.FC = () => {
                   {claim.id}
                 </td>
                 <td className="px-4 py-4 whitespace-nowrap text-sm text-slate-700 dark:text-slate-300">
-                  {formatDate(claim.date)}
+                  {formatDate(claim.submission_date)}
                 </td>
                 <td className="px-4 py-4 whitespace-nowrap text-sm text-slate-700 dark:text-slate-300">
                   {formatCurrency(claim.amount)}
                 </td>
                 <td className="px-4 py-4 whitespace-nowrap">
-                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${riskBadgeClasses[claim.riskLevel]}`}>
-                    {claim.riskLevel.charAt(0).toUpperCase() + claim.riskLevel.slice(1)}
+                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${riskBadgeClasses[claim.risk_level as RiskLevel]}`}>
+                    {claim.risk_level.charAt(0).toUpperCase() + claim.risk_level.slice(1)}
                   </span>
                 </td>
                 <td className="px-4 py-4 whitespace-nowrap">
-                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusBadgeClasses[claim.status]}`}>
-                    {statusLabels[claim.status]}
+                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusBadgeClasses[claim.status as Status]}`}>
+                    {statusLabels[claim.status as Status] || claim.status}
                   </span>
                 </td>
                 <td className="px-4 py-4 whitespace-nowrap text-sm text-slate-700 dark:text-slate-300">
-                  {claim.claimType}
+                  {claim.claim_type}
                 </td>
                 <td className="px-4 py-4 whitespace-nowrap text-sm text-slate-700 dark:text-slate-300">
-                  {claim.reviewer}
+                  {claim.reviewer || 'Unassigned'}
                 </td>
                 <td className="px-4 py-4 whitespace-nowrap text-right text-sm font-medium">
                   <button className="text-slate-400 hover:text-slate-900 dark:hover:text-white">
@@ -312,7 +321,7 @@ export const ClaimsTable: React.FC = () => {
           </tbody>
         </table>
 
-        {filteredClaims.length === 0 && (
+        {filteredClaims.length === 0 && !loading && (
           <div className="p-8 text-center">
             <p className="text-slate-500 dark:text-slate-400">No claims matching your search criteria</p>
           </div>
