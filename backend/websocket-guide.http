@@ -1,0 +1,310 @@
+/*
+# 🔌 WebSocket Integration Guide - Insurance Claims Dashboard
+## A Complete Guide to Understanding WebSocket Communication
+
+### 📚 Learning Objectives
+By the end of this guide, you'll understand:
+1. **What WebSockets are** and why we use them
+2. **How our Ballerina backend** implements WebSocket services
+3. **How the React frontend** connects and communicates
+4. **Real-time data flow** and event broadcasting
+5. **Testing and debugging** WebSocket connections
+
+### 🎯 Why WebSockets for Insurance Claims?
+- ✅ **Real-time claim status updates** - No page refresh needed
+- ✅ **Instant fraud alert notifications** - Immediate security alerts
+- ✅ **Live dashboard statistics** - Always up-to-date metrics
+- ✅ **Multi-user synchronization** - All users see changes instantly
+- ✅ **Better user experience** - Smooth, responsive interface
+*/
+/*
+# 🏗️ Backend Architecture Overview
+
+## 🔧 Two Servers Running Simultaneously
+
+### HTTP API Server (Port 8080) - Traditional REST
+- **Purpose**: Handle standard CRUD operations
+- **Endpoints**: `/api/claims`, `/api/fraud`, `/api/dashboard/stats`
+- **Communication**: Request → Process → Response → Connection Closes
+- **Usage**: Data fetching, form submissions, status updates
+
+### WebSocket Server (Port 8082) - Real-time Communication  
+- **Purpose**: Push live updates to connected clients
+- **Endpoint**: `ws://localhost:8082/ws`
+- **Communication**: Persistent connection, bi-directional messaging
+- **Usage**: Real-time notifications, live data synchronization
+
+## 📊 Key Backend Files
+- **main.bal** - HTTP & WebSocket servers, event broadcasting
+- **claims_functions.bal** - Business logic with WebSocket integration  
+- **database.bal** - Database connection utilities
+*/
+/*
+# 🧪 Testing HTTP API Endpoints
+
+## Let's start by testing the traditional HTTP endpoints to understand the baseline functionality:
+*/
+### 1. Health Check - Verify Backend is Running
+GET http://localhost:8080/api/health
+# Expected Response: {"status": "healthy", "timestamp": "..."}
+# This confirms our HTTP API server is running on port 8080
+### 2. Get All Claims - Traditional HTTP Request
+GET http://localhost:8080/api/claims
+# This returns all claims data immediately
+# Notice: Connection closes after response is sent
+# No real-time updates - you'd need to refresh to see changes
+/*
+# 🔌 WebSocket Connection Flow
+
+## 📡 How WebSocket Connection Works
+
+### Step 1: Client Initiates Connection
+```javascript
+// Frontend code in realtime-ws.ts
+const ws = new WebSocket('ws://localhost:8082/ws');
+```
+
+### Step 2: Backend Accepts Connection
+```ballerina
+// Backend code in main.bal (line ~470)
+service /ws on wsListener {
+    resource function get .() returns websocket:Service {
+        return new WebSocketService();
+    }
+}
+```
+
+### Step 3: Client Registration & Welcome Message
+- Backend generates unique client ID (e.g., "client-1756148893")
+- Stores connection: `connectedClients[clientId] = caller`
+- Sends welcome message with connection details
+
+### Step 4: Persistent Connection Established
+- Connection stays open for real-time communication
+- Both client and server can send messages anytime
+- Multiple clients can connect simultaneously
+*/
+/*
+# ✨ The Real-Time Magic - Claim Status Update Flow
+
+## 🚀 What happens when you update a claim status:
+
+### The Complete Chain Reaction:
+1. **User clicks** status dropdown in UI → selects "approved"
+2. **Frontend sends** HTTP PUT request to update claim
+3. **Backend processes** request → updates database  
+4. **Backend triggers** WebSocket broadcast to ALL connected clients
+5. **All frontends** receive real-time update → UI updates automatically
+
+Let's test this flow step by step:
+*/
+### 🎯 REAL-TIME TEST: Update Claim Status
+# This HTTP request will trigger a WebSocket broadcast!
+PUT http://localhost:8080/api/claims/CLM-47254/status
+Content-Type: application/json
+
+{
+  "status": "approved"
+}
+
+# What happens after you run this:
+# 1. ✅ HTTP Response: Status updated successfully  
+# 2. 🔔 WebSocket Broadcast: All connected clients receive:
+#    {
+#      "type": "claim_updated",
+#      "payload": { "claim": { /* updated claim data */ } },
+#      "timestamp": "2025-08-26T...",
+#      "server": "insurance-claims-dashboard"
+#    }
+### 🔄 Test Different Status Values
+# Each of these will trigger real-time broadcasts
+
+# Change to "in_review"
+PUT http://localhost:8080/api/claims/CLM-47254/status
+Content-Type: application/json
+
+{
+  "status": "in_review"
+}
+
+###
+
+# Change to "rejected" 
+PUT http://localhost:8080/api/claims/CLM-47254/status
+Content-Type: application/json
+
+{
+  "status": "rejected"
+}
+
+###
+
+# Change back to "pending"
+PUT http://localhost:8080/api/claims/CLM-47254/status
+Content-Type: application/json
+
+{
+  "status": "pending"
+}
+/*
+# 🛠️ How to See WebSocket Messages in Action
+
+## Method 1: Browser Developer Tools
+1. Open your browser and go to any page
+2. Press **F12** to open Developer Tools  
+3. Go to **Console** tab
+4. Paste this JavaScript code and press Enter:
+
+```javascript
+const ws = new WebSocket('ws://localhost:8082/ws');
+ws.onopen = () => console.log('✅ WebSocket Connected!');
+ws.onmessage = (event) => {
+    console.log('🔔 Real-time message received:', JSON.parse(event.data));
+};
+ws.onerror = (error) => console.log('❌ WebSocket Error:', error);
+```
+
+5. Now run the claim update tests above
+6. Watch the console for real-time messages!
+
+## Method 2: Use the WebSocket Test Page  
+Open: `websocket-test.html` in your browser (if available)
+
+## Method 3: Multiple Browser Tabs
+1. Open the dashboard in multiple browser tabs
+2. Update claim status from one tab  
+3. Watch real-time updates appear in all other tabs instantly!
+*/
+/*
+# 🚨 Other WebSocket Events - Fraud Alerts
+
+WebSocket broadcasting isn't just for claim updates! Let's test fraud alert events:
+*/
+### 🚨 Test Fraud Alert Dismissal (Also triggers WebSocket broadcast)
+PUT http://localhost:8080/api/fraud/ALERT-001/dismiss
+
+# This will broadcast:
+# {
+#   "type": "fraud_alert_dismissed",
+#   "payload": { /* alert data */ },
+#   "timestamp": "...",
+#   "server": "insurance-claims-dashboard"  
+# }
+/*
+# 🔧 Troubleshooting & Common Issues
+
+## ❌ Problem: "WebSocket connection failed"
+**Solution**: Make sure backend is running on port 8082
+
+## ❌ Problem: "API returns 500 error for status update"
+**Cause**: Invalid status value (database only accepts: `pending`, `in_review`, `approved`, `rejected`)
+
+## ❌ Problem: "Messages not received on frontend"  
+**Check**: 
+1. WebSocket connection is established
+2. Browser console shows connection logs
+3. Backend logs show broadcast messages
+
+## ✅ Success Indicators to Look For:
+- HTTP 200 responses for API calls
+- Backend logs: "WebSocket client connected"
+- Backend logs: "Broadcasting event: claim_updated to X clients"
+- Frontend receives real-time updates without page refresh
+
+## 📊 Valid Status Values (Database ENUM):
+- ✅ `pending` - Initial state
+- ✅ `in_review` - Being reviewed  
+- ✅ `approved` - Approved for payment
+- ✅ `rejected` - Claim denied
+- ❌ `under_review` - NOT VALID (will cause 500 error)
+*/
+/*
+# 🎓 Learning Exercises
+
+## 🎯 Exercise 1: Basic WebSocket Testing
+1. **Start the backend** (make sure it's running)
+2. **Open browser console** and connect to WebSocket
+3. **Run a claim status update** from the HTTP tests above
+4. **Watch for real-time message** in browser console
+
+## 🎯 Exercise 2: Multi-Client Testing
+1. **Open multiple browser tabs** to the dashboard
+2. **Connect WebSocket test** in one tab  
+3. **Update claim status** from another tab via UI
+4. **Observe real-time updates** in all tabs simultaneously
+
+## 🎯 Exercise 3: Message Flow Tracing  
+1. **Watch backend logs** in terminal
+2. **Update a claim status** via API
+3. **Trace the flow**: HTTP Request → Database Update → WebSocket Broadcast → Frontend Update
+
+## 🎯 Exercise 4: Error Testing
+1. Try updating with invalid status: `"under_review"`
+2. Observe the 500 error
+3. Try again with valid status: `"in_review"`  
+4. See the success and WebSocket broadcast
+
+## 🎯 Exercise 5: Frontend Integration
+1. **Start the frontend**: `cd frontend && npm run dev`
+2. **Open**: http://localhost:3000/dashboard
+3. **Click claim status dropdown** and change values
+4. **Watch real-time updates** across multiple browser tabs
+*/
+/*
+# 📋 Quick Reference Cheat Sheet
+
+## 🌐 Important URLs
+- **HTTP API**: http://localhost:8080/api/*
+- **WebSocket**: ws://localhost:8082/ws
+- **Frontend**: http://localhost:3000/dashboard
+
+## 📁 Key Files to Understand
+### Backend (Ballerina):
+- **main.bal** - HTTP & WebSocket servers, event broadcasting system
+- **claims_functions.bal** - Business logic with WebSocket integration
+- **database.bal** - Database connection utilities
+
+### Frontend (React):
+- **realtime-ws.ts** - WebSocket connection management
+- **useRealTime.ts** - React hooks for WebSocket events  
+- **ClaimsTable.tsx** - UI component with real-time updates
+
+## 🔄 Data Flow Summary
+1. **User Action** (Frontend) → Click status dropdown
+2. **HTTP API Call** (Frontend → Backend) → PUT /api/claims/{id}/status
+3. **Database Update** (Backend) → Update claim record
+4. **WebSocket Broadcast** (Backend → All Clients) → Real-time event
+5. **UI Update** (All Frontends) → Automatic re-render
+
+## 🎯 WebSocket Event Types
+- **claim_updated** - Claim status changes
+- **fraud_alert_created** - New fraud detection  
+- **fraud_alert_dismissed** - Alert resolved
+- **dashboard_stats** - Statistics updated
+
+---
+
+# 🎉 Congratulations!
+
+You now understand:
+- ✅ **WebSocket fundamentals** and their benefits
+- ✅ **Ballerina WebSocket implementation** 
+- ✅ **React frontend integration** with real-time updates
+- ✅ **Event broadcasting system** and message flow
+- ✅ **Debugging techniques** and troubleshooting
+
+## 🚀 Next Steps:
+- Experiment with the test endpoints above
+- Try building custom WebSocket events
+- Explore advanced features like authentication
+- Build your own real-time features!
+
+**Happy coding!** 🎯
+*/
+###
+
+###
+
+/*
+
+*/
