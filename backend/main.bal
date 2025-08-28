@@ -18,11 +18,19 @@ mysql:Client dbClient = check new (
     password = dbPassword
 );
 
-// HTTP service
+// HTTP service with CORS configuration
+@http:ServiceConfig {
+    cors: {
+        allowOrigins: ["http://localhost:3000"],
+        allowCredentials: true,
+        allowHeaders: ["Authorization", "Content-Type"],
+        allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+    }
+}
 service / on new http:Listener(8080) {
     
     // Health check endpoint
-    resource function get health() returns json {
+    resource function get hello() returns json {
         return {
             "status": "OK",
             "message": "Authentication service is running"

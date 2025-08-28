@@ -121,12 +121,59 @@ public function registerUser(mysql:Client dbClient, UserRegistration userReg) re
     `);
     
     if result.affectedRowCount > 0 {
-        response.statusCode = 201;
-        response.setJsonPayload({
-            "success": true,
-            "message": "User registered successfully",
-            "userId": result.lastInsertId
-        });
+        // Get the newly created user
+        stream<User, error?> newUserStream = dbClient->query(
+            `SELECT id, username, email, password_hash, full_name, created_at FROM users WHERE id = ${result.lastInsertId}`
+        );
+        
+        User[]|error newUsers = from User user in newUserStream select user;
+        check newUserStream.close();
+        
+        if newUsers is User[] && newUsers.length() > 0 {
+            User newUser = newUsers[0];
+            
+            // Generate session token for auto-login
+            string sessionToken = uuid:createType1AsString();
+            time:Utc currentTime = time:utcNow();
+            time:Utc expiryTime = time:utcAddSeconds(currentTime, 3600); // 1 hour
+            
+            // Store session in database
+            sql:ExecutionResult sessionResult = check dbClient->execute(`
+                INSERT INTO user_sessions (user_id, session_token, expires_at) 
+                VALUES (${newUser.id}, ${sessionToken}, ${time:utcToString(expiryTime)})
+            `);
+            
+            if sessionResult.affectedRowCount > 0 {
+                response.statusCode = 201;
+                response.setJsonPayload({
+                    "success": true,
+                    "message": "User registered and logged in successfully",
+                    "userId": result.lastInsertId,
+                    "sessionToken": sessionToken,
+                    "user": {
+                        "id": newUser.id,
+                        "username": newUser.username,
+                        "email": newUser.email,
+                        "fullName": newUser.full_name
+                    },
+                    "expiresAt": time:utcToString(expiryTime)
+                });
+            } else {
+                response.statusCode = 201;
+                response.setJsonPayload({
+                    "success": true,
+                    "message": "User registered successfully but failed to create session",
+                    "userId": result.lastInsertId
+                });
+            }
+        } else {
+            response.statusCode = 201;
+            response.setJsonPayload({
+                "success": true,
+                "message": "User registered successfully",
+                "userId": result.lastInsertId
+            });
+        }
     } else {
         response.statusCode = 500;
         response.setJsonPayload({
