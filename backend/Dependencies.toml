@@ -382,6 +382,7 @@ dependencies = [
 ]
 modules = [
 	{org = "user", packageName = "backend", moduleName = "backend"},
-	{org = "user", packageName = "backend", moduleName = "backend.auth"}
+	{org = "user", packageName = "backend", moduleName = "backend.auth"},
+	{org = "user", packageName = "backend", moduleName = "backend.claim"}
 ]
 

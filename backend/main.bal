@@ -1,6 +1,8 @@
 import ballerina/http;
 import ballerinax/mysql;
 import backend.auth;
+import backend.claim;
+
 
 // Database configuration
 configurable string dbHost = "localhost";
@@ -73,6 +75,17 @@ service / on new http:Listener(8080) {
         }
         return auth:updateUserProfile(dbClient, sessionToken, userUpdate);
     }
+
+    // Submit claim endpoint
+    resource function post claim(claim:Claim claimData) returns http:Response|error {
+        return claim:submitClaim(dbClient, claimData);
+    }
+
+    // Get claim status endpoint
+    resource function get claim/[string claimId]() returns http:Response|error {
+        return claim:getClaimStatus(dbClient, claimId);
+    }
+
 }
 
 // Initialize database tables on startup
