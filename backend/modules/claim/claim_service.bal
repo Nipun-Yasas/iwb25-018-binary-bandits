@@ -143,9 +143,21 @@ public function submitClaim(mysql:Client dbClient, Claim claim) returns http:Res
         return response;
     }
     
-    // Extract claim data
+    // Extract claim data with proper validation
     string patientRef = claim.patient.reference;
-    string patientId = extractStringIdFromReference(patientRef);  // Use string extraction
+    string patientIdString = extractStringIdFromReference(patientRef);
+    
+    // Validate and convert patient ID to integer
+    int|error patientIdResult = int:fromString(patientIdString);
+    if patientIdResult is error {
+        response.statusCode = 400;
+        response.setJsonPayload({
+            "success": false,
+            "message": string `Invalid patient ID format: '${patientIdString}'. Patient ID must be a valid number.`
+        });
+        return response;
+    }
+    int patientId = patientIdResult;
     
     string claimId = claim.id;
     decimal totalAmount = claim.total.value;
@@ -161,15 +173,90 @@ public function submitClaim(mysql:Client dbClient, Claim claim) returns http:Res
         policyId = extractStringIdFromReference(coverageRef);
     }
     
-    // Insert claim into database
-    sql:ExecutionResult result = check dbClient->execute(`
+    // Validate foreign key references exist in database
+    error? foreignKeyValidation = validateForeignKeys(dbClient, patientId, policyId, providerId);
+    if foreignKeyValidation is error {
+        response.statusCode = 400;
+        response.setJsonPayload({
+            "success": false,
+            "message": foreignKeyValidation.message()
+        });
+        return response;
+    }
+    
+    // Check if claim ID already exists
+    stream<record{int count;}, error?> countStream = dbClient->query(
+        `SELECT COUNT(*) as count FROM claims WHERE claim_id = ${claimId}`
+    );
+    
+    record{int count;}[]|error countResult = from record{int count;} count in countStream select count;
+    check countStream.close();
+    
+    if countResult is error {
+        response.statusCode = 500;
+        response.setJsonPayload({
+            "success": false,
+            "message": "Database error while checking claim ID"
+        });
+        return response;
+    }
+    
+    if countResult.length() > 0 && countResult[0].count > 0 {
+        response.statusCode = 409; // Conflict status code
+        response.setJsonPayload({
+            "success": false,
+            "message": string `Claim with ID '${claimId}' already exists. Please use a unique claim ID.`
+        });
+        return response;
+    }
+    
+    // Insert claim into database using integer patient_id
+    sql:ExecutionResult|error result = dbClient->execute(`
         INSERT INTO claims (claim_id, patient_id, policy_id, provider_id, diagnosis_code, procedure_code, claim_amount, status, decision_reason)
         VALUES (${claimId}, ${patientId}, ${policyId}, ${providerId}, ${diagnosisCode}, ${procedureCode}, ${totalAmount}, 'Submitted', 'Pending review')
     `);
     
+    if result is error {
+        // Handle specific SQL errors
+        if result.message().includes("Duplicate entry") {
+            response.statusCode = 409;
+            response.setJsonPayload({
+                "success": false,
+                "message": string `Claim with ID '${claimId}' already exists. Please use a unique claim ID.`
+            });
+        } else if result.message().includes("Incorrect integer value") {
+            response.statusCode = 400;
+            response.setJsonPayload({
+                "success": false,
+                "message": "Invalid data format: One or more fields contain incorrect data types. Please check patient ID, provider ID, and policy ID formats."
+            });
+        } else if result.message().includes("foreign key constraint") || result.message().includes("Cannot add or update a child row") {
+            response.statusCode = 400;
+            response.setJsonPayload({
+                "success": false,
+                "message": "Referenced data not found: Please ensure patient, policy, and provider IDs exist in the system."
+            });
+        } else {
+            response.statusCode = 500;
+            response.setJsonPayload({
+                "success": false,
+                "message": "Database error while submitting claim: " + result.message()
+            });
+        }
+        return response;
+    }
+    
     if result.affectedRowCount > 0 {
         // Process the claim automatically
-        ClaimResponse claimResponse = check processClaimById(dbClient, claimId);
+        ClaimResponse|error claimResponse = processClaimById(dbClient, claimId);
+        if claimResponse is error {
+            response.statusCode = 500;
+            response.setJsonPayload({
+                "success": false,
+                "message": "Claim submitted but processing failed: " + claimResponse.message()
+            });
+            return response;
+        }
         
         response.statusCode = 201;
         response.setJsonPayload({
@@ -181,7 +268,7 @@ public function submitClaim(mysql:Client dbClient, Claim claim) returns http:Res
         response.statusCode = 500;
         response.setJsonPayload({
             "success": false,
-            "message": "Failed to submit claim"
+            "message": "Failed to submit claim - no rows affected"
         });
     }
     
@@ -264,7 +351,7 @@ function processClaimById(mysql:Client dbClient, string claimId) returns ClaimRe
         request: { reference: "Claim/" + claimId },
         outcome: outcome,
         status: status,
-        patient: { reference: "Patient/" + claim.patient_id },  // Use string patient_id
+        patient: { reference: "Patient/" + claim.patient_id },  // Convert back to string for reference
         insurer: { reference: "Organization/INS001" }, // Default insurer
         disposition: disposition,
         payment: {
@@ -316,20 +403,141 @@ public function getClaimStatus(mysql:Client dbClient, string claimId) returns ht
     return response;
 }
 
+// Validate that foreign key references exist in the database
+function validateForeignKeys(mysql:Client dbClient, int patientId, string policyId, string providerId) returns error? {
+    // Check if patient exists
+    stream<record{int count;}, error?> patientStream = dbClient->query(
+        `SELECT COUNT(*) as count FROM patients WHERE patient_id = ${patientId}`
+    );
+    
+    record{int count;}[]|error patientResult = from record{int count;} count in patientStream select count;
+    check patientStream.close();
+    
+    if patientResult is error {
+        return error("Database error while validating patient ID");
+    }
+    
+    if patientResult.length() == 0 || patientResult[0].count == 0 {
+        return error(string `Patient with ID '${patientId}' does not exist in the system`);
+    }
+    
+    // Check if policy exists (if policy ID is provided)
+    if policyId.trim() != "" {
+        stream<record{int count;}, error?> policyStream = dbClient->query(
+            `SELECT COUNT(*) as count FROM policies WHERE policy_id = ${policyId}`
+        );
+        
+        record{int count;}[]|error policyResult = from record{int count;} count in policyStream select count;
+        check policyStream.close();
+        
+        if policyResult is error {
+            return error("Database error while validating policy ID");
+        }
+        
+        if policyResult.length() == 0 || policyResult[0].count == 0 {
+            return error(string `Policy with ID '${policyId}' does not exist in the system`);
+        }
+        
+        // Check if the policy belongs to the patient
+        stream<record{int count;}, error?> policyPatientStream = dbClient->query(
+            `SELECT COUNT(*) as count FROM policies WHERE policy_id = ${policyId} AND patient_id = ${patientId}`
+        );
+        
+        record{int count;}[]|error policyPatientResult = from record{int count;} count in policyPatientStream select count;
+        check policyPatientStream.close();
+        
+        if policyPatientResult is error {
+            return error("Database error while validating policy-patient relationship");
+        }
+        
+        if policyPatientResult.length() == 0 || policyPatientResult[0].count == 0 {
+            return error(string `Policy '${policyId}' does not belong to patient '${patientId}'`);
+        }
+        
+        // Check if policy is active
+        stream<record{string status;}, error?> policyStatusStream = dbClient->query(
+            `SELECT status FROM policies WHERE policy_id = ${policyId}`
+        );
+        
+        record{string status;}[]|error policyStatusResult = from record{string status;} status in policyStatusStream select status;
+        check policyStatusStream.close();
+        
+        if policyStatusResult is error {
+            return error("Database error while checking policy status");
+        }
+        
+        if policyStatusResult.length() > 0 && policyStatusResult[0].status != "Active" {
+            return error(string `Policy '${policyId}' is not active. Current status: ${policyStatusResult[0].status}`);
+        }
+    }
+    
+    // Check if provider exists
+    if providerId.trim() != "" {
+        stream<record{int count;}, error?> providerStream = dbClient->query(
+            `SELECT COUNT(*) as count FROM providers WHERE provider_id = ${providerId}`
+        );
+        
+        record{int count;}[]|error providerResult = from record{int count;} count in providerStream select count;
+        check providerStream.close();
+        
+        if providerResult is error {
+            return error("Database error while validating provider ID");
+        }
+        
+        if providerResult.length() == 0 || providerResult[0].count == 0 {
+            return error(string `Provider with ID '${providerId}' does not exist in the system`);
+        }
+    }
+    
+    return;
+}
+
 // Validate claim data
 function validateClaim(Claim claim) returns error? {
     if claim.id.trim() == "" {
         return error("Claim ID is required");
     }
     
+    // Validate claim ID format (optional - you can add specific format requirements)
+    if claim.id.length() < 3 {
+        return error("Claim ID must be at least 3 characters long");
+    }
+    
     if claim.patient.reference.trim() == "" {
         return error("Patient reference is required");
     }
     
-    // Validate patient reference format
-    string patientId = extractStringIdFromReference(claim.patient.reference);
-    if patientId.trim() == "" {
+    // Validate patient reference format and numeric conversion
+    string patientIdString = extractStringIdFromReference(claim.patient.reference);
+    if patientIdString.trim() == "" {
         return error("Valid patient ID is required");
+    }
+    
+    // Check if patient ID can be converted to integer
+    int|error patientIdResult = int:fromString(patientIdString);
+    if patientIdResult is error {
+        return error(string `Patient ID '${patientIdString}' must be a valid number`);
+    }
+    
+    // Validate provider reference
+    if claim.provider.reference.trim() == "" {
+        return error("Provider reference is required");
+    }
+    
+    string providerId = extractStringIdFromReference(claim.provider.reference);
+    if providerId.trim() == "" {
+        return error("Valid provider ID is required");
+    }
+    
+    // Validate insurance/policy reference
+    if claim.insurance.length() > 0 {
+        string coverageRef = claim.insurance[0].coverage.reference;
+        string policyId = extractStringIdFromReference(coverageRef);
+        if policyId.trim() == "" {
+            return error("Valid policy ID is required");
+        }
+    } else {
+        return error("At least one insurance coverage is required");
     }
     
     if claim.total.value <= 0d {

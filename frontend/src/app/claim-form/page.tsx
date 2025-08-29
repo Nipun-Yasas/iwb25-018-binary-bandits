@@ -64,11 +64,12 @@ export default function ClaimForm() {
     setResponse(null);
 
     try {
-      const claimId = generateClaimId();
+      const claimId = Math.floor(1000 + Math.random() * 9000);
+
       
       const claim = {
         resourceType: "Claim",
-        id: '212',
+        id: claimId.toString(),
         patient: {
           reference: `Patient/${formData.patientId}`
         },

@@ -6,7 +6,7 @@ import {
   Container,
   Typography,
   Paper,
-  Grid2 as Grid,
+  Grid,
   Card,
   CardContent,
   Button,
