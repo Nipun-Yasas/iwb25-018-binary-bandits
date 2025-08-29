@@ -6,7 +6,7 @@ import {
   Container,
   Typography,
   Paper,
-  Grid2 as Grid,
+  Grid,
   Card,
   CardContent,
   Button,
@@ -19,7 +19,12 @@ import {
 } from '@mui/icons-material';
 
 export default function Dashboard() {
-  const [user, setUser] = useState<any>(null);
+  type User = {
+    full_name?: string;
+    username?: string;
+    [key: string]: unknown;
+  };
+  const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
     // Get user from localStorage
@@ -64,7 +69,7 @@ export default function Dashboard() {
           Welcome to Insurance Claim Validation System
         </Typography>
         <Typography variant="h6" color="text.secondary">
-          {user ? `Hello, ${user.fullName || user.username}!` : 'Dashboard Overview'}
+          {user ? `Hello, ${user.full_name || user.username}!` : 'Dashboard Overview'}
         </Typography>
       </Paper>
 

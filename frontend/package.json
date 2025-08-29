@@ -16,8 +16,13 @@
     "@mui/material": "^7.3.1",
     "@mui/material-nextjs": "^7.3.0",
     "@toolpad/core": "^0.16.0",
+    "framer-motion": "^12.23.12",
+    "gsap": "^3.13.0",
+    "ldrs": "^1.1.7",
+    "lucide-react": "^0.542.0",
     "next": "15.5.0",
-    "react": "19.1.0",
+    "react": "^19.1.0",
+    "react-countup": "^6.5.3",
     "react-dom": "19.1.0"
   },
   "devDependencies": {
