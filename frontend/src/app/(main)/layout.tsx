@@ -5,6 +5,7 @@ import { PageContainer } from "@toolpad/core/PageContainer";
 
 import CustomToolbarActions from "../_components/main/CustomToolbarActions";
 import CustomAppTitle from "../_components/main/CustomAppTitle";
+import Chatbot from "../../components/ui/Chatbot";
 import { ReactNode } from "react";
 
 interface LayoutProps {
@@ -14,16 +15,19 @@ interface LayoutProps {
 export default function Layout({ children }: LayoutProps) {
 
   return (
-    <DashboardLayout
-      slots={{
-        appTitle: CustomAppTitle,
-        toolbarActions: CustomToolbarActions,
-      }}
-    >
-      <PageContainer>
-       
-          {children}
-      </PageContainer>
-    </DashboardLayout>
+    <>
+      <DashboardLayout
+        slots={{
+          appTitle: CustomAppTitle,
+          toolbarActions: CustomToolbarActions,
+        }}
+      >
+        <PageContainer>
+         
+            {children}
+        </PageContainer>
+      </DashboardLayout>
+      <Chatbot />
+    </>
   );
 }

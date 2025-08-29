@@ -75,8 +75,6 @@ CREATE TABLE IF NOT EXISTS claims (
     claim_amount DECIMAL(10,2),
     status VARCHAR(20),
     decision_reason VARCHAR(255),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (patient_id) REFERENCES patients(patient_id) ON DELETE CASCADE,
     FOREIGN KEY (policy_id) REFERENCES policies(policy_id) ON DELETE CASCADE,
     FOREIGN KEY (provider_id) REFERENCES providers(provider_id) ON DELETE CASCADE
