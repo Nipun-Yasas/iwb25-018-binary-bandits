@@ -8,7 +8,7 @@ import { styled } from '@mui/material/styles';
 const StyledFab = styled(Fab)(({ theme }) => ({
   position: 'fixed',
   bottom: 20,
-  left: 20,
+  right: 20,
   zIndex: 1000,
   backgroundColor: theme.palette.primary.main,
   color: theme.palette.primary.contrastText,

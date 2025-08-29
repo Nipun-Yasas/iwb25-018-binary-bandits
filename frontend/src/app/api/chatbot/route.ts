@@ -80,6 +80,8 @@ Format your response in a conversational, helpful manner while being thorough an
 
     const geminiResult = await response.json();
 
+    console.log("Gemini API response:", geminiResult);
+
     // Extract the response text
     const candidates = geminiResult?.candidates;
     const responseText = candidates?.[0]?.content?.parts?.[0]?.text || 'I apologize, but I could not process your request at this time.';
