@@ -5,7 +5,7 @@ import { PageContainer } from "@toolpad/core/PageContainer";
 
 import CustomToolbarActions from "../_components/main/CustomToolbarActions";
 import CustomAppTitle from "../_components/main/CustomAppTitle";
-import Chatbot from "../../components/ui/Chatbot";
+import Chatbot from "../_components/chatbot/Chatbot";
 import { ReactNode } from "react";
 
 interface LayoutProps {

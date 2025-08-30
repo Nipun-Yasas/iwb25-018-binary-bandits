@@ -17,19 +17,61 @@ const NAVIGATION: Navigation = [
     icon: <DashboardIcon />,
   },
   {
-    segment: 'submit-claim',
-    title: 'Submit Claim',
+    segment: 'claims',
+    title: 'Claims',
     icon: <AssignmentTurnedInIcon />,
   },
   {
-    segment: 'claim-status',
-    title: 'Claim Status',
-    icon: <PendingActionsIcon />,
+    segment: 'patients',
+    title: 'Patients',
+    icon: <SecurityIcon />,
+    children: [
+      {
+        segment: 'add',
+        title: 'Add Patient',
+        icon: <SecurityIcon />,
+      },
+      {
+        segment: 'view',
+        title: 'View Patient',
+        icon: <SecurityIcon />,
+      }
+    ]
   },
   {
-    segment: 'fraud-detection',
-    title: 'Fraud Detection',
+    segment: 'insurers',
+    title: 'Insurers',
     icon: <SecurityIcon />,
+    children: [
+      {
+        segment: 'add',
+        title: 'Add Insurer',
+        icon: <SecurityIcon />,
+      },
+      {
+        segment: 'view',
+        title: 'View Insurer',
+        icon: <SecurityIcon />,
+      }
+    ]
+  },
+  
+  {
+    segment: 'provider',
+    title: 'Provider',
+    icon: <SecurityIcon />,
+    children: [
+      {
+        segment: 'add',
+        title: 'Add Provider',
+        icon: <SecurityIcon />,
+      },
+      {
+        segment: 'view',
+        title: 'View Provider',
+        icon: <SecurityIcon />,
+      }
+    ]
   },
   {
     segment: 'reports',
