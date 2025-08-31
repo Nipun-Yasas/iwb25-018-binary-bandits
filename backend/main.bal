@@ -6,6 +6,7 @@ import backend.person;
 import backend.provider;
 import backend.policie;
 import backend.insurer;
+import backend.statistics;
 
 // Database configuration
 configurable string dbHost = "localhost";
@@ -242,6 +243,11 @@ service / on new http:Listener(8080) {
     }
 
     // ========== ADDITIONAL ENDPOINTS ==========
+    
+    // Get dashboard statistics
+    resource function get dashboard/statistics() returns http:Response|error {
+        return statistics:getDashboardStatistics(dbClient);
+    }
     
     // Get system statistics
     resource function get statistics() returns json|error {
