@@ -316,6 +316,108 @@ public function getClaimStatus(mysql:Client dbClient, string claimId) returns ht
     return response;
 }
 
+// Get all claims with pagination and filtering
+public function getAllClaims(mysql:Client dbClient, string? status = (), int? patientId = (), string? providerId = (), int? offset = 0, int? 'limit = 50) returns http:Response|error {
+    http:Response response = new;
+    
+    // Build parameterized query based on filters
+    sql:ParameterizedQuery baseQuery = `SELECT claim_id, patient_id, policy_id, provider_id, diagnosis_code, procedure_code, claim_amount, status, decision_reason FROM claims`;
+    sql:ParameterizedQuery whereClause = ``;
+    sql:ParameterizedQuery countBaseQuery = `SELECT COUNT(*) as total FROM claims`;
+    
+    // Build WHERE clause based on filters
+    boolean hasConditions = false;
+    
+    if status is string && status.trim() != "" {
+        if hasConditions {
+            whereClause = sql:queryConcat(whereClause, ` AND status = ${status}`);
+        } else {
+            whereClause = sql:queryConcat(whereClause, ` WHERE status = ${status}`);
+            hasConditions = true;
+        }
+    }
+    
+    if patientId is int {
+        if hasConditions {
+            whereClause = sql:queryConcat(whereClause, ` AND patient_id = ${patientId}`);
+        } else {
+            whereClause = sql:queryConcat(whereClause, ` WHERE patient_id = ${patientId}`);
+            hasConditions = true;
+        }
+    }
+    
+    if providerId is string && providerId.trim() != "" {
+        if hasConditions {
+            whereClause = sql:queryConcat(whereClause, ` AND provider_id = ${providerId}`);
+        } else {
+            whereClause = sql:queryConcat(whereClause, ` WHERE provider_id = ${providerId}`);
+            hasConditions = true;
+        }
+    }
+    
+    int offsetValue = offset ?: 0;
+    int limitValue = 'limit ?: 50;
+    
+    sql:ParameterizedQuery fullQuery = sql:queryConcat(baseQuery, whereClause, ` ORDER BY claim_id DESC LIMIT ${offsetValue}, ${limitValue}`);
+    sql:ParameterizedQuery countQuery = sql:queryConcat(countBaseQuery, whereClause);
+    
+    // Execute query to get claims
+    stream<ClaimRecord, error?> claimStream = dbClient->query(fullQuery);
+    
+    ClaimRecord[]|error claims = from ClaimRecord claim in claimStream select claim;
+    check claimStream.close();
+    
+    if claims is error {
+        response.statusCode = 500;
+        response.setJsonPayload({
+            "success": false,
+            "message": "Failed to retrieve claims: " + claims.message()
+        });
+        return response;
+    }
+    
+    // Get total count for pagination
+    stream<record{int total;}, error?> countStream = dbClient->query(countQuery);
+    
+    record{int total;}[]|error countResult = from record{int total;} count in countStream select count;
+    check countStream.close();
+    
+    int totalCount = 0;
+    if countResult is record{int total;}[] && countResult.length() > 0 {
+        totalCount = countResult[0].total;
+    }
+    
+    // Format response data
+    json[] claimData = [];
+    foreach ClaimRecord claim in claims {
+        claimData.push({
+            "claimId": claim.claim_id,
+            "patientId": claim.patient_id,
+            "policyId": claim.policy_id,
+            "providerId": claim.provider_id,
+            "diagnosisCode": claim.diagnosis_code,
+            "procedureCode": claim.procedure_code,
+            "amount": claim.claim_amount,
+            "status": claim.status,
+            "decisionReason": claim.decision_reason
+        });
+    }
+    
+    response.statusCode = 200;
+    response.setJsonPayload({
+        "success": true,
+        "data": claimData,
+        "pagination": {
+            "offset": offsetValue,
+            "limit": limitValue,
+            "total": totalCount,
+            "hasMore": offsetValue + limitValue < totalCount
+        }
+    });
+    
+    return response;
+}
+
 // Validate claim data
 function validateClaim(Claim claim) returns error? {
     if claim.id.trim() == "" {

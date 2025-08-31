@@ -6,6 +6,7 @@ import backend.person;
 import backend.provider;
 import backend.policie;
 import backend.insurer;
+import backend.statistics;
 
 // Database configuration
 configurable string dbHost = "localhost";
@@ -241,7 +242,17 @@ service / on new http:Listener(8080) {
         return claim:getClaimStatus(dbClient, claimId);
     }
 
+    // Get all claims with filtering and pagination
+    resource function get claims(string? status = (), int? patientId = (), string? providerId = (), int? offset = 0, int? 'limit = 50) returns http:Response|error {
+        return claim:getAllClaims(dbClient, status, patientId, providerId, offset, 'limit);
+    }
+
     // ========== ADDITIONAL ENDPOINTS ==========
+    
+    // Get dashboard statistics
+    resource function get dashboard/statistics() returns http:Response|error {
+        return statistics:getDashboardStatistics(dbClient);
+    }
     
     // Get system statistics
     resource function get statistics() returns json|error {
