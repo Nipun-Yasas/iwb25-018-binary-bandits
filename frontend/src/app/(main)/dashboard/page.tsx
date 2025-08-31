@@ -113,7 +113,7 @@ export default function Dashboard() {
                   
                   <Grid size={{ xs: 12, md: 4 }}>
                     <Box display="flex" gap={2} justifyContent={{ xs: 'flex-start', md: 'flex-end' }}>
-                      {/* <Button 
+                      <Button 
                         variant="outlined" 
                         size="large"
                         startIcon={<LogoutIcon />}
@@ -131,7 +131,7 @@ export default function Dashboard() {
                         }}
                       >
                         Logout
-                      </Button> */}
+                      </Button>
                       <Button 
                         variant="contained" 
                         size="large"
@@ -148,7 +148,7 @@ export default function Dashboard() {
                           }
                         }}
                       >
-                        Submit New Claim (Sample Page For API Request)
+                        Submit New Claim
                       </Button>
                     </Box>
                   </Grid>

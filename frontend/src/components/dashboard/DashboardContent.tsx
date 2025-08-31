@@ -176,7 +176,7 @@ const DashboardContent: React.FC = () => {
       </Grow>
 
       {/* Charts Grid */}
-      <Grid container spacing={5}>
+      <Grid container spacing={4}>
         {/* First Row - Pie Charts */}
         <Grid size={12}>
           <Fade in timeout={1000}>
@@ -189,7 +189,7 @@ const DashboardContent: React.FC = () => {
           </Fade>
         </Grid>
         
-        <Grid size={{ xs: 12, md: 6 }}>
+        <Grid size={{ xs: 12, md: 4 }}>
           <Grow in timeout={1000} style={{ transformOrigin: '0 0 0' }}>
             <Paper 
               elevation={0}
@@ -210,8 +210,7 @@ const DashboardContent: React.FC = () => {
           </Grow>
         </Grid>
         
-          
-        <Grid size={{ xs: 12, md: 6 }}>
+        <Grid size={{ xs: 12, md: 4 }}>
           <Grow in timeout={1200} style={{ transformOrigin: '0 0 0' }}>
             <Paper 
               elevation={0}
@@ -232,7 +231,7 @@ const DashboardContent: React.FC = () => {
           </Grow>
         </Grid>
         
-        {/* <Grid size={{ xs: 12, md: 4 }}>
+        <Grid size={{ xs: 12, md: 4 }}>
           <Grow in timeout={1400} style={{ transformOrigin: '0 0 0' }}>
             <Paper 
               elevation={0}
@@ -251,12 +250,12 @@ const DashboardContent: React.FC = () => {
               <PatientGenderPieChart data={stats.patients.genderBreakdown} />
             </Paper>
           </Grow>
-        </Grid> */}
+        </Grid>
 
         {/* Second Row - Line Charts */}
         <Grid size={12}>
           <Fade in timeout={1600}>
-            <Box display="flex" alignItems="center" mb={3} mt={6}>
+            <Box display="flex" alignItems="center" mb={3} mt={4}>
               <Timeline sx={{ color: 'info.main', mr: 1, fontSize: 28 }} />
               <Typography variant="h5" fontWeight="bold" color="text.primary">
                 Trend Analysis
@@ -265,8 +264,7 @@ const DashboardContent: React.FC = () => {
           </Fade>
         </Grid>
         
-        {/* Monthly Claims Trend - Full Row */}
-        <Grid size={20}>
+        <Grid size={{ xs: 12, md: 4 }}>
           <Grow in timeout={1800} style={{ transformOrigin: '0 0 0' }}>
             <Paper 
               elevation={0}
@@ -276,8 +274,6 @@ const DashboardContent: React.FC = () => {
                 border: '1px solid rgba(0, 0, 0, 0.05)',
                 overflow: 'hidden',
                 transition: 'all 0.3s ease',
-                minHeight: '400px',
-                
                 '&:hover': {
                   transform: 'translateY(-4px)',
                   boxShadow: '0 12px 40px rgba(0, 0, 0, 0.12)',
@@ -289,8 +285,7 @@ const DashboardContent: React.FC = () => {
           </Grow>
         </Grid>
         
-        {/* Monthly Amounts Trend - Full Row */}
-        <Grid size={12}>
+        <Grid size={{ xs: 12, md: 4 }}>
           <Grow in timeout={2000} style={{ transformOrigin: '0 0 0' }}>
             <Paper 
               elevation={0}
@@ -300,7 +295,6 @@ const DashboardContent: React.FC = () => {
                 border: '1px solid rgba(0, 0, 0, 0.05)',
                 overflow: 'hidden',
                 transition: 'all 0.3s ease',
-                minHeight: '400px',
                 '&:hover': {
                   transform: 'translateY(-4px)',
                   boxShadow: '0 12px 40px rgba(0, 0, 0, 0.12)',
@@ -312,8 +306,7 @@ const DashboardContent: React.FC = () => {
           </Grow>
         </Grid>
         
-        {/* Utilization Trend - Full Row */}
-        <Grid size={12}>
+        <Grid size={{ xs: 12, md: 4 }}>
           <Grow in timeout={2200} style={{ transformOrigin: '0 0 0' }}>
             <Paper 
               elevation={0}
@@ -323,7 +316,6 @@ const DashboardContent: React.FC = () => {
                 border: '1px solid rgba(0, 0, 0, 0.05)',
                 overflow: 'hidden',
                 transition: 'all 0.3s ease',
-                minHeight: '400px',
                 '&:hover': {
                   transform: 'translateY(-4px)',
                   boxShadow: '0 12px 40px rgba(0, 0, 0, 0.12)',
@@ -338,7 +330,7 @@ const DashboardContent: React.FC = () => {
         {/* Third Row - Bar Charts */}
         <Grid size={12}>
           <Fade in timeout={2400}>
-            <Box display="flex" alignItems="center" mb={3} mt={6}>
+            <Box display="flex" alignItems="center" mb={3} mt={4}>
               <BarChartIcon sx={{ color: 'warning.main', mr: 1, fontSize: 28 }} />
               <Typography variant="h5" fontWeight="bold" color="text.primary">
                 Performance Analysis
@@ -347,8 +339,7 @@ const DashboardContent: React.FC = () => {
           </Fade>
         </Grid>
         
-        {/* Top Providers Bar Chart - Full Row */}
-        <Grid size={12}>
+        <Grid size={{ xs: 12, md: 6 }}>
           <Grow in timeout={2600} style={{ transformOrigin: '0 0 0' }}>
             <Paper 
               elevation={0}
@@ -358,7 +349,6 @@ const DashboardContent: React.FC = () => {
                 border: '1px solid rgba(0, 0, 0, 0.05)',
                 overflow: 'hidden',
                 transition: 'all 0.3s ease',
-                minHeight: '450px',
                 '&:hover': {
                   transform: 'translateY(-4px)',
                   boxShadow: '0 12px 40px rgba(0, 0, 0, 0.12)',
@@ -370,8 +360,7 @@ const DashboardContent: React.FC = () => {
           </Grow>
         </Grid>
         
-        {/* Age Group and Policy Status - Half Rows */}
-        <Grid size={{ xs: 12, md: 6 }}>
+        <Grid size={{ xs: 12, md: 3 }}>
           <Grow in timeout={2800} style={{ transformOrigin: '0 0 0' }}>
             <Paper 
               elevation={0}
@@ -381,7 +370,6 @@ const DashboardContent: React.FC = () => {
                 border: '1px solid rgba(0, 0, 0, 0.05)',
                 overflow: 'hidden',
                 transition: 'all 0.3s ease',
-                minHeight: '400px',
                 '&:hover': {
                   transform: 'translateY(-4px)',
                   boxShadow: '0 12px 40px rgba(0, 0, 0, 0.12)',
@@ -393,7 +381,7 @@ const DashboardContent: React.FC = () => {
           </Grow>
         </Grid>
         
-        <Grid size={{ xs: 12, md: 6 }}>
+        <Grid size={{ xs: 12, md: 3 }}>
           <Grow in timeout={3000} style={{ transformOrigin: '0 0 0' }}>
             <Paper 
               elevation={0}
@@ -403,7 +391,6 @@ const DashboardContent: React.FC = () => {
                 border: '1px solid rgba(0, 0, 0, 0.05)',
                 overflow: 'hidden',
                 transition: 'all 0.3s ease',
-                minHeight: '400px',
                 '&:hover': {
                   transform: 'translateY(-4px)',
                   boxShadow: '0 12px 40px rgba(0, 0, 0, 0.12)',
@@ -418,7 +405,7 @@ const DashboardContent: React.FC = () => {
         {/* Financial Summary */}
         <Grid size={12}>
           <Fade in timeout={3200}>
-            <Box display="flex" alignItems="center" mb={3} mt={6}>
+            <Box display="flex" alignItems="center" mb={3} mt={4}>
               <AttachMoney sx={{ color: 'success.main', mr: 1, fontSize: 28 }} />
               <Typography variant="h5" fontWeight="bold" color="text.primary">
                 Financial Overview
