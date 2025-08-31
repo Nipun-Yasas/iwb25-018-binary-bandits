@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 
@@ -24,23 +24,84 @@ const rejected = 280;
 const flagged = 70;
 
 export default function Stats() {
-  const statsRef = useRef(null);
+  const statsRef = useRef<HTMLDivElement | null>(null);
+
+  // Animated display values
+  const [totalCount, setTotalCount] = useState(0);
+  const [approvedCount, setApprovedCount] = useState(0);
+  const [rejectedCount, setRejectedCount] = useState(0);
+  const [flaggedCount, setFlaggedCount] = useState(0);
+
+  // Internal numeric counters (mutated by GSAP)
+  const countersRef = useRef({
+    total: 0,
+    approved: 0,
+    rejected: 0,
+    flagged: 0,
+  });
 
   useEffect(() => {
     if (!statsRef.current) return;
-
     const element = statsRef.current;
+
+    const animateCounts = () => {
+      const c = countersRef.current;
+      gsap.killTweensOf(c);
+
+      // Animate all counters concurrently, slight stagger via delay
+      gsap.to(c, {
+        total: totalClaims,
+        duration: 1.2,
+        ease: "power3.out",
+        onUpdate: () => setTotalCount(Math.round(c.total)),
+      });
+      gsap.to(c, {
+        approved: approved,
+        duration: 1.2,
+        delay: 0.05,
+        ease: "power3.out",
+        onUpdate: () => setApprovedCount(Math.round(c.approved)),
+      });
+      gsap.to(c, {
+        rejected: rejected,
+        duration: 1.2,
+        delay: 0.1,
+        ease: "power3.out",
+        onUpdate: () => setRejectedCount(Math.round(c.rejected)),
+      });
+      gsap.to(c, {
+        flagged: flagged,
+        duration: 1.2,
+        delay: 0.15,
+        ease: "power3.out",
+        onUpdate: () => setFlaggedCount(Math.round(c.flagged)),
+      });
+    };
+
+    const resetCounts = () => {
+      const c = countersRef.current;
+      gsap.killTweensOf(c);
+      gsap.to(c, {
+        total: 0,
+        approved: 0,
+        rejected: 0,
+        flagged: 0,
+        duration: 0.3,
+        ease: "power2.out",
+        onUpdate: () => {
+          setTotalCount(Math.round(c.total));
+          setApprovedCount(Math.round(c.approved));
+          setRejectedCount(Math.round(c.rejected));
+          setFlaggedCount(Math.round(c.flagged));
+        },
+      });
+    };
 
     const ctx = gsap.context(() => {
       const anim = gsap.fromTo(
         element,
         { opacity: 0, y: 100 },
-        {
-          opacity: 1,
-          y: 0,
-          duration: 1,
-          ease: "power3.out",
-        }
+        { opacity: 1, y: 0, duration: 1, ease: "power3.out" }
       );
 
       ScrollTrigger.create({
@@ -49,38 +110,9 @@ export default function Stats() {
         end: "bottom 20%",
         toggleActions: "play reverse play reverse",
         animation: anim,
-        onEnter: () => {
-          gsap.to(element, {
-            opacity: 1,
-            y: 0,
-            duration: 1,
-            ease: "power3.out",
-          });
-        },
-        onLeaveBack: () => {
-          gsap.to(element, {
-            opacity: 0,
-            y: -100,
-            duration: 1,
-            ease: "power3.out",
-          });
-        },
-        onLeave: () => {
-          gsap.to(element, {
-            opacity: 0,
-            y: 100,
-            duration: 1,
-            ease: "power3.out",
-          });
-        },
-        onEnterBack: () => {
-          gsap.to(element, {
-            opacity: 1,
-            y: 0,
-            duration: 1,
-            ease: "power3.out",
-          });
-        },
+        onEnter: animateCounts,
+        onEnterBack: animateCounts,
+        onLeaveBack: resetCounts,
       });
     }, statsRef);
 
@@ -94,7 +126,7 @@ export default function Stats() {
       id="stats"
       sx={{
         px: { xs: 2, md: 4 },
-        py: { xs: 6, md: 8 },
+        py: { xs: 6, md: 1 },
         position: "relative",
         overflow: "hidden",
       }}
@@ -149,7 +181,8 @@ export default function Stats() {
             color="text.secondary"
             sx={{ maxWidth: 720, mx: "auto" }}
           >
-            Track submissions, approvals, rejections, and fraud flags at a glance.
+            Track submissions, approvals, rejections, and fraud flags at a
+            glance.
           </Typography>
         </Box>
 
@@ -175,7 +208,7 @@ export default function Stats() {
           >
             <StatItem
               icon={<ReceiptLongIcon fontSize="medium" />}
-              number={totalClaims}
+              number={totalCount}
               text="Total Claims Submitted"
             />
           </motion.div>
@@ -188,7 +221,7 @@ export default function Stats() {
           >
             <StatItem
               icon={<CheckCircleOutlineIcon fontSize="medium" />}
-              number={approved}
+              number={approvedCount}
               text="Approved"
             />
           </motion.div>
@@ -201,7 +234,7 @@ export default function Stats() {
           >
             <StatItem
               icon={<CancelIcon fontSize="medium" />}
-              number={rejected}
+              number={rejectedCount}
               text="Rejected"
             />
           </motion.div>
@@ -214,7 +247,7 @@ export default function Stats() {
           >
             <StatItem
               icon={<ReportProblemIcon fontSize="medium" />}
-              number={flagged}
+              number={flaggedCount}
               text="Fraud/Suspicious"
             />
           </motion.div>

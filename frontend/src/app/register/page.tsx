@@ -131,7 +131,7 @@ export default function RegisterPage() {
           
           // Show success message briefly then redirect
           setTimeout(() => {
-            router.push('/'); // Redirect to home page
+            router.push('/login'); // Redirect to home page
           }, 1500);
         } else {
           // Reset form if no auto-login

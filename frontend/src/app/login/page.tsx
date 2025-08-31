@@ -112,7 +112,7 @@ export default function LoginPage() {
         
         // Show success message briefly then redirect
         setTimeout(() => {
-          router.push('/'); // Redirect to home page
+          router.push('/dashboard'); // Redirect to home page
         }, 1500);
       } else {
         setMessage({ type: 'error', text: data.message });

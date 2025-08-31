@@ -62,7 +62,7 @@ export default function ClaimsDataGrid({
     {
       field: "status",
       headerName: "Status",
-      width: 110,
+      width: 120,
       renderCell: (
         params: GridRenderCellParams<ClaimRow, ClaimRow["status"]>
       ) => {

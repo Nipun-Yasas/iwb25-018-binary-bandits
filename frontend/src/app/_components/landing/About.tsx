@@ -237,13 +237,15 @@ export default function About() {
                 fontWeight: 400,
               }}
             >
-              FastClaim streamlines healthcare claim processing with FHIR and X12
-              standards, real-time eligibility checks, fraud detection, and instant
-              notifications. Built for hackathons, ready for production.
+              FastClaim streamlines healthcare claim processing with FHIR and
+              X12 standards, real-time eligibility checks, fraud detection, and
+              instant notifications. Built for hackathons, ready for production.
             </Typography>
 
             {/* Key Features */}
-            <Box sx={{ display: "flex", flexDirection: "column", gap: 3, mb: 4 }}>
+            <Box
+              sx={{ display: "flex", flexDirection: "column", gap: 3, mb: 4 }}
+            >
               <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
                 <Box
                   sx={{
@@ -359,28 +361,6 @@ export default function About() {
                 </Box>
               </Box>
             </Box>
-
-            <Link href="/claim" passHref style={{ textDecoration: "none" }}>
-              <Button
-                variant="contained"
-                size="large"
-                sx={{
-                  background: "linear-gradient(135deg, #1976d2 0%, #00bfa5 100%)",
-                  px: 4,
-                  py: 1.5,
-                  borderRadius: 2,
-                  fontSize: "1.1rem",
-                  "&:hover": {
-                    background: "linear-gradient(135deg, #1565c0 0%, #008e76 100%)",
-                    transform: "translateY(-2px)",
-                    boxShadow: "0 8px 25px rgba(25, 118, 210, 0.3)",
-                  },
-                  transition: "all 0.3s ease",
-                }}
-              >
-                Submit a Claim
-              </Button>
-            </Link>
           </motion.div>
         </Box>
       </Box>
