@@ -1,4 +1,5 @@
 -- Create the binary_bandits database
+DROP DATABASE IF EXISTS binary_bandits;
 CREATE DATABASE IF NOT EXISTS binary_bandits;
 USE binary_bandits;
 
@@ -21,7 +22,7 @@ CREATE TABLE IF NOT EXISTS user_sessions (
     user_id INT NOT NULL,
     session_token VARCHAR(255) UNIQUE NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    expires_at TIMESTAMP NOT NULL,
+    expires_at VARCHAR(255) NOT NULL,
     is_active BOOLEAN DEFAULT TRUE,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     INDEX idx_user_id (user_id),
