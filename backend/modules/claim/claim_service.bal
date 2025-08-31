@@ -145,7 +145,7 @@ public function submitClaim(mysql:Client dbClient, Claim claim) returns http:Res
     
     // Extract claim data
     string patientRef = claim.patient.reference;
-    string patientId = extractStringIdFromReference(patientRef);
+    string patientId = extractStringIdFromReference(patientRef);  // Use string extraction
     
     string claimId = claim.id;
     decimal totalAmount = claim.total.value;
@@ -161,54 +161,22 @@ public function submitClaim(mysql:Client dbClient, Claim claim) returns http:Res
         policyId = extractStringIdFromReference(coverageRef);
     }
     
-    // Validate entities exist in database
-    error? entityValidation = validateEntitiesExist(dbClient, patientId, providerId, policyId);
-    if entityValidation is error {
-        response.statusCode = 400;
-        response.setJsonPayload({
-            "success": false,
-            "message": entityValidation.message()
-        });
-        return response;
-    }
-    
-    // Fraud detection - check for duplicate/suspicious claims
-    string? fraudReason = check detectFraud(dbClient, patientId, providerId, diagnosisCode, procedureCode, totalAmount);
-    
-    string status = "Submitted";
-    string decisionReason = "Pending review";
-    
-    if fraudReason is string {
-        status = "Rejected";
-        decisionReason = fraudReason;
-    }
-    
     // Insert claim into database
     sql:ExecutionResult result = check dbClient->execute(`
         INSERT INTO claims (claim_id, patient_id, policy_id, provider_id, diagnosis_code, procedure_code, claim_amount, status, decision_reason)
-        VALUES (${claimId}, ${patientId}, ${policyId}, ${providerId}, ${diagnosisCode}, ${procedureCode}, ${totalAmount}, ${status}, ${decisionReason})
+        VALUES (${claimId}, ${patientId}, ${policyId}, ${providerId}, ${diagnosisCode}, ${procedureCode}, ${totalAmount}, 'Submitted', 'Pending review')
     `);
     
     if result.affectedRowCount > 0 {
-        if status == "Rejected" {
-            response.statusCode = 400;
-            response.setJsonPayload({
-                "success": false,
-                "message": "Claim rejected due to fraud detection",
-                "reason": fraudReason,
-                "claimId": claimId
-            });
-        } else {
-            // Process the claim automatically for non-fraudulent claims
-            ClaimResponse claimResponse = check processClaimById(dbClient, claimId);
-            
-            response.statusCode = 201;
-            response.setJsonPayload({
-                "success": true,
-                "message": "Claim submitted and processed successfully",
-                "claimResponse": claimResponse.toJson()
-            });
-        }
+        // Process the claim automatically
+        ClaimResponse claimResponse = check processClaimById(dbClient, claimId);
+        
+        response.statusCode = 201;
+        response.setJsonPayload({
+            "success": true,
+            "message": "Claim submitted and processed successfully",
+            "claimResponse": claimResponse.toJson()
+        });
     } else {
         response.statusCode = 500;
         response.setJsonPayload({
@@ -220,106 +188,36 @@ public function submitClaim(mysql:Client dbClient, Claim claim) returns http:Res
     return response;
 }
 
-// Validate that patient, provider, and policy exist in database
-function validateEntitiesExist(mysql:Client dbClient, string patientId, string providerId, string policyId) returns error? {
-    // Check if patient exists
-    stream<record{int count;}, error?> patientStream = dbClient->query(
-        `SELECT COUNT(*) as count FROM patients WHERE patient_id = ${patientId}`
-    );
+// Process a claim and generate response
+function processClaim(Claim claim) returns ClaimResponse|error {
+    // Generate a unique response ID
+    string responseId = "resp_" + uuid:createType1AsString().substring(0, 8);
     
-    record{int count;}[]|error patientResult = from record{int count;} count in patientStream select count;
-    check patientStream.close();
+    // Basic claim processing logic
+    string outcome = "complete";
+    string status = "active";
+    string disposition = "Approved - Covered under policy";
     
-    if patientResult is error || patientResult.length() == 0 || patientResult[0].count == 0 {
-        return error("Patient with ID " + patientId + " does not exist in the system");
+    // Simple approval logic based on amount
+    if claim.total.value > 5000d {
+        disposition = "Partially Approved - Amount exceeds limit";
     }
     
-    // Check if provider exists
-    stream<record{int count;}, error?> providerStream = dbClient->query(
-        `SELECT COUNT(*) as count FROM providers WHERE provider_id = ${providerId}`
-    );
+    ClaimResponse claimResponse = {
+        resourceType: "ClaimResponse",
+        id: responseId,
+        request: { reference: "Claim/" + claim.id },
+        outcome: outcome,
+        status: status,
+        patient: claim.patient,
+        insurer: claim.insurer,
+        disposition: disposition,
+        payment: {
+            amount: claim.total
+        }
+    };
     
-    record{int count;}[]|error providerResult = from record{int count;} count in providerStream select count;
-    check providerStream.close();
-    
-    if providerResult is error || providerResult.length() == 0 || providerResult[0].count == 0 {
-        return error("Provider with ID " + providerId + " does not exist in the system");
-    }
-    
-    // Check if policy exists and is active
-    stream<record{int count; string status;}, error?> policyStream = dbClient->query(
-        `SELECT COUNT(*) as count, status FROM policies WHERE policy_id = ${policyId} GROUP BY status`
-    );
-    
-    record{int count; string status;}[]|error policyResult = from record{int count; string status;} policy in policyStream select policy;
-    check policyStream.close();
-    
-    if policyResult is error || policyResult.length() == 0 || policyResult[0].count == 0 {
-        return error("Policy with ID " + policyId + " does not exist in the system");
-    }
-    
-    if policyResult[0].status != "Active" {
-        return error("Policy with ID " + policyId + " is not active (Status: " + policyResult[0].status + ")");
-    }
-    
-    return;
-}
-
-// Fraud detection function
-function detectFraud(mysql:Client dbClient, string patientId, string providerId, string diagnosisCode, string procedureCode, decimal amount) returns string?|error {
-    
-    // Check for duplicate claims within last 30 days
-    stream<record{int count;}, error?> duplicateStream = dbClient->query(
-        `SELECT COUNT(*) as count FROM claims 
-         WHERE patient_id = ${patientId} 
-         AND provider_id = ${providerId} 
-         AND diagnosis_code = ${diagnosisCode} 
-         AND procedure_code = ${procedureCode}
-         AND claim_amount = ${amount}
-         AND DATE(NOW()) - INTERVAL 30 DAY <= DATE(NOW())`
-    );
-    
-    record{int count;}[]|error duplicateResult = from record{int count;} count in duplicateStream select count;
-    check duplicateStream.close();
-    
-    if duplicateResult is record{int count;}[] && duplicateResult.length() > 0 && duplicateResult[0].count >= 2 {
-        return "Fraud detected: Duplicate claim - Patient has submitted identical claims more than twice in the last 30 days";
-    }
-    
-    // Check for excessive claims frequency (more than 5 claims in 7 days)
-    stream<record{int count;}, error?> frequencyStream = dbClient->query(
-        `SELECT COUNT(*) as count FROM claims 
-         WHERE patient_id = ${patientId} 
-         AND DATE(NOW()) - INTERVAL 7 DAY <= DATE(NOW())`
-    );
-    
-    record{int count;}[]|error frequencyResult = from record{int count;} count in frequencyStream select count;
-    check frequencyStream.close();
-    
-    if frequencyResult is record{int count;}[] && frequencyResult.length() > 0 && frequencyResult[0].count >= 5 {
-        return "Fraud detected: Excessive claim frequency - Patient has submitted more than 5 claims in the last 7 days";
-    }
-    
-    // Check for unusually high amount claims (over $10,000)
-    if amount > 10000d {
-        return "Fraud detected: Unusually high claim amount exceeding $10,000 requires manual review";
-    }
-    
-    // Check for same day claims with different providers
-    stream<record{int count;}, error?> sameDayStream = dbClient->query(
-        `SELECT COUNT(DISTINCT provider_id) as count FROM claims 
-         WHERE patient_id = ${patientId} 
-         AND DATE(NOW()) = CURDATE()`
-    );
-    
-    record{int count;}[]|error sameDayResult = from record{int count;} count in sameDayStream select count;
-    check sameDayStream.close();
-    
-    if sameDayResult is record{int count;}[] && sameDayResult.length() > 0 && sameDayResult[0].count >= 3 {
-        return "Fraud detected: Multiple claims with different providers on the same day";
-    }
-    
-    return ();
+    return claimResponse;
 }
 
 // Process claim by ID from database
@@ -338,30 +236,6 @@ function processClaimById(mysql:Client dbClient, string claimId) returns ClaimRe
     }
     
     ClaimRecord claim = claims[0];
-    
-    // Don't process if already rejected
-    if claim.status == "Rejected" {
-        string responseId = "resp_" + claimId;
-        
-        ClaimResponse claimResponse = {
-            resourceType: "ClaimResponse",
-            id: responseId,
-            request: { reference: "Claim/" + claimId },
-            outcome: "error",
-            status: "cancelled",
-            patient: { reference: "Patient/" + claim.patient_id },
-            insurer: { reference: "Organization/INS001" },
-            disposition: claim.decision_reason ?: "Claim rejected",
-            payment: {
-                amount: {
-                    value: 0d,
-                    currency: "USD"
-                }
-            }
-        };
-        
-        return claimResponse;
-    }
     
     // Determine approval status based on business rules
     string disposition = "Approved - Covered under policy";
@@ -390,7 +264,7 @@ function processClaimById(mysql:Client dbClient, string claimId) returns ClaimRe
         request: { reference: "Claim/" + claimId },
         outcome: outcome,
         status: status,
-        patient: { reference: "Patient/" + claim.patient_id },
+        patient: { reference: "Patient/" + claim.patient_id },  // Use string patient_id
         insurer: { reference: "Organization/INS001" }, // Default insurer
         disposition: disposition,
         payment: {
