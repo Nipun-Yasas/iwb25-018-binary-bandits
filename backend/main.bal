@@ -242,6 +242,11 @@ service / on new http:Listener(8080) {
         return claim:getClaimStatus(dbClient, claimId);
     }
 
+    // Get all claims with filtering and pagination
+    resource function get claims(string? status = (), int? patientId = (), string? providerId = (), int? offset = 0, int? 'limit = 50) returns http:Response|error {
+        return claim:getAllClaims(dbClient, status, patientId, providerId, offset, 'limit);
+    }
+
     // ========== ADDITIONAL ENDPOINTS ==========
     
     // Get dashboard statistics
