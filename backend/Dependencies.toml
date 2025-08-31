@@ -391,7 +391,6 @@ modules = [
 	{org = "user", packageName = "backend", moduleName = "backend.insurer"},
 	{org = "user", packageName = "backend", moduleName = "backend.person"},
 	{org = "user", packageName = "backend", moduleName = "backend.policie"},
-	{org = "user", packageName = "backend", moduleName = "backend.provider"},
-	{org = "user", packageName = "backend", moduleName = "backend.statistics"}
+	{org = "user", packageName = "backend", moduleName = "backend.provider"}
 ]
 

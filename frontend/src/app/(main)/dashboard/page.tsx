@@ -26,6 +26,11 @@ interface User {
 }
 
 export default function Dashboard() {
+  type User = {
+    full_name?: string;
+    username?: string;
+    [key: string]: unknown;
+  };
   const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
@@ -45,6 +50,17 @@ export default function Dashboard() {
   const handleNewClaim = () => {
     window.location.href = '/claim-form';
   };
+  return (
+    <Container maxWidth="lg" sx={{ py: 4 }}>
+      {/* Welcome Section */}
+      <Paper elevation={3} sx={{ p: 4, mb: 4, borderRadius: 3 }}>
+        <Typography variant="h3" gutterBottom fontWeight="bold" color="primary.main">
+          Welcome to Insurance Claim Validation System
+        </Typography>
+        <Typography variant="h6" color="text.secondary">
+          {user ? `Hello, ${user.full_name || user.username}!` : 'Dashboard Overview'}
+        </Typography>
+      </Paper>
 
   return (
     <Box 

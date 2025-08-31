@@ -13,7 +13,7 @@ configurable string dbHost = "localhost";
 configurable int dbPort = 3306;
 configurable string dbName = "binary_bandits";
 configurable string dbUser = "root";
-configurable string dbPassword = "";
+configurable string dbPassword = "1234";
 
 // MySQL client
 mysql:Client dbClient = check new (
