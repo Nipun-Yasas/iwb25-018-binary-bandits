@@ -1,7 +1,18 @@
 'use client';
 
-import { useState } from 'react';
-
+import React, { useState } from 'react';
+import {
+  Box,
+  Paper,
+  Grid,
+  TextField,
+  Typography,
+  Button,
+  Alert,
+  Stack,
+  Divider,
+  CircularProgress
+} from '@mui/material';
 interface ClaimFormData {
   patientId: string;
   providerId: string;
@@ -40,22 +51,15 @@ export default function ClaimForm() {
     diagnosisDisplay: '',
     procedureCode: '',
     procedureDisplay: '',
-    claimAmount: ''
+    claimAmount: '',
   });
 
   const [response, setResponse] = useState<ClaimResponse | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
-
-  const generateClaimId = () => {
-    return 'CLM-' + Date.now() + '-' + Math.random().toString(36).substr(2, 5);
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -64,29 +68,18 @@ export default function ClaimForm() {
     setResponse(null);
 
     try {
-      const claimId = Math.floor(1000 + Math.random() * 9000);
-
-      
       const claim = {
-        resourceType: "Claim",
-        id: claimId.toString(),
-        patient: {
-          reference: `Patient/${formData.patientId}`
-        },
-        insurer: {
-          reference: "Organization/INS001"
-        },
-        provider: {
-          reference: `Organization/${formData.providerId}`
-        },
+        resourceType: 'Claim',
+        id: Math.floor(1000 + Math.random() * 9000).toString(),
+        patient: { reference: `Patient/${formData.patientId}` },
+        insurer: { reference: 'Organization/INS001' },
+        provider: { reference: `Organization/${formData.providerId}` },
         insurance: [
           {
             sequence: 1,
             focal: true,
-            coverage: {
-              reference: `Coverage/${formData.policyId}`
-            }
-          }
+            coverage: { reference: `Coverage/${formData.policyId}` },
+          },
         ],
         diagnosis: [
           {
@@ -95,11 +88,11 @@ export default function ClaimForm() {
               coding: [
                 {
                   code: formData.diagnosisCode,
-                  display: formData.diagnosisDisplay
-                }
-              ]
-            }
-          }
+                  display: formData.diagnosisDisplay,
+                },
+              ],
+            },
+          },
         ],
         item: [
           {
@@ -108,37 +101,34 @@ export default function ClaimForm() {
               coding: [
                 {
                   code: formData.procedureCode,
-                  display: formData.procedureDisplay
-                }
-              ]
+                  display: formData.procedureDisplay,
+                },
+              ],
             },
             unitPrice: {
-              value: parseFloat(formData.claimAmount),
-              currency: "USD"
-            }
-          }
+              value: parseFloat(formData.claimAmount || '0'),
+              currency: 'USD',
+            },
+          },
         ],
         total: {
-          value: parseFloat(formData.claimAmount),
-          currency: "USD"
-        }
+          value: parseFloat(formData.claimAmount || '0'),
+          currency: 'USD',
+        },
       };
 
-      const apiResponse = await fetch('http://localhost:8080/claim', {
+      const apiResponse = await fetch('http://localhost:8080/claims', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(claim)
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(claim),
       });
 
       const result = await apiResponse.json();
-      setResponse(result);
-
+      setResponse(result as ClaimResponse);
     } catch (error) {
       setResponse({
         success: false,
-        message: 'Failed to submit claim: ' + (error as Error).message
+        message: 'Failed to submit claim: ' + (error as Error).message,
       });
     } finally {
       setIsSubmitting(false);
@@ -146,193 +136,187 @@ export default function ClaimForm() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-4xl mx-auto px-4">
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <h1 className="text-2xl font-bold text-gray-900 mb-6">Submit Insurance Claim</h1>
-          
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Patient ID
-                </label>
-                <input
-                  type="text"
+      <Box sx={{ display:'flex',justifyContent: 'center',alignItems:'center',m: 5 }}>
+        <Paper elevation={2} sx={{ p: 4,height:"100%" }}>
+          <Typography variant="h4" fontWeight={700} gutterBottom>
+            Submit Insurance Claim
+          </Typography>
+
+          <Box component="form" onSubmit={handleSubmit} noValidate sx={{ mt: 2 }}>
+            <Grid container spacing={2}>
+              <Grid size={{ xs: 12, md: 6 }}>
+                <TextField
+                  required
+                  fullWidth
+                  size="small"
+                  label="Patient ID"
                   name="patientId"
                   value={formData.patientId}
                   onChange={handleInputChange}
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="e.g., 12345"
                 />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Provider ID
-                </label>
-                <input
-                  type="text"
+              </Grid>
+              <Grid size={{ xs: 12, md: 6 }}>
+                <TextField
+                  required
+                  fullWidth
+                  size="small"
+                  label="Provider ID"
                   name="providerId"
                   value={formData.providerId}
                   onChange={handleInputChange}
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="e.g., PROV001"
                 />
-              </div>
+              </Grid>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Policy ID
-                </label>
-                <input
-                  type="text"
+              <Grid size={{ xs: 12, md: 6 }}>
+                <TextField
+                  required
+                  fullWidth
+                  size="small"
+                  label="Policy ID"
                   name="policyId"
                   value={formData.policyId}
                   onChange={handleInputChange}
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="e.g., POL123456"
                 />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Claim Amount ($)
-                </label>
-                <input
+              </Grid>
+              <Grid size={{ xs: 12, md: 6 }}>
+                <TextField
+                  required
+                  fullWidth
+                  size="small"
                   type="number"
+                  inputProps={{ min: 0, step: '0.01' }}
+                  label="Claim Amount ($)"
                   name="claimAmount"
                   value={formData.claimAmount}
                   onChange={handleInputChange}
-                  required
-                  min="0"
-                  step="0.01"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="e.g., 1500.00"
                 />
-              </div>
+              </Grid>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Diagnosis Code
-                </label>
-                <input
-                  type="text"
+              <Grid size={{ xs: 12, md: 6 }}>
+                <TextField
+                  required
+                  fullWidth
+                  size="small"
+                  label="Diagnosis Code"
                   name="diagnosisCode"
                   value={formData.diagnosisCode}
                   onChange={handleInputChange}
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="e.g., K21.9"
                 />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Diagnosis Description
-                </label>
-                <input
-                  type="text"
+              </Grid>
+              <Grid size={{ xs: 12, md: 6 }}>
+                <TextField
+                  required
+                  fullWidth
+                  size="small"
+                  label="Diagnosis Description"
                   name="diagnosisDisplay"
                   value={formData.diagnosisDisplay}
                   onChange={handleInputChange}
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="e.g., Gastro-esophageal reflux disease"
                 />
-              </div>
+              </Grid>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Procedure Code
-                </label>
-                <input
-                  type="text"
+              <Grid size={{ xs: 12, md: 6 }}>
+                <TextField
+                  required
+                  fullWidth
+                  size="small"
+                  label="Procedure Code"
                   name="procedureCode"
                   value={formData.procedureCode}
                   onChange={handleInputChange}
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="e.g., 99213"
                 />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Procedure Description
-                </label>
-                <input
-                  type="text"
+              </Grid>
+              <Grid size={{ xs: 12, md: 6 }}>
+                <TextField
+                  required
+                  fullWidth
+                  size="small"
+                  label="Procedure Description"
                   name="procedureDisplay"
                   value={formData.procedureDisplay}
                   onChange={handleInputChange}
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="e.g., Office visit, established patient"
                 />
-              </div>
-            </div>
+              </Grid>
 
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isSubmitting ? 'Submitting Claim...' : 'Submit Claim'}
-            </button>
-          </form>
+              <Grid size={{ xs: 12, md: 6 }}>
+                <Button
+                  type="submit"
+                  variant="contained"
+                  disabled={isSubmitting}
+                  sx={{ mt: 1 }}
+                  startIcon={isSubmitting ? <CircularProgress size={18} color="inherit" /> : undefined}
+                >
+                  {isSubmitting ? 'Submitting Claim...' : 'Submit Claim'}
+                </Button>
+              </Grid>
+            </Grid>
+          </Box>
 
           {response && (
-            <div className="mt-8 p-6 bg-gray-50 rounded-lg">
-              <h2 className="text-xl font-semibold mb-4">Claim Response</h2>
-              
-              <div className={`p-4 rounded-md mb-4 ${
-                response.success ? 'bg-green-100 border border-green-400' : 'bg-red-100 border border-red-400'
-              }`}>
-                <p className={`font-medium ${response.success ? 'text-green-800' : 'text-red-800'}`}>
-                  {response.success ? '✅ Success' : '❌ Error'}
-                </p>
-                <p className={response.success ? 'text-green-700' : 'text-red-700'}>
-                  {response.message}
-                </p>
-              </div>
+            <Box sx={{ mt: 4 }}>
+              <Alert severity={response.success ? 'success' : 'error'} sx={{ mb: 2 }}>
+                <Stack>
+                  <Typography variant="subtitle1" fontWeight={600}>
+                    {response.success ? 'Success' : 'Error'}
+                  </Typography>
+                  <Typography variant="body2">{response.message}</Typography>
+                </Stack>
+              </Alert>
 
               {response.success && response.claimResponse && (
-                <div className="bg-white p-4 rounded-md border">
-                  <h3 className="font-semibold text-gray-900 mb-3">Claim Processing Details</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <span className="font-medium text-gray-600">Response ID:</span>
-                      <p className="text-gray-900">{response.claimResponse.id}</p>
-                    </div>
-                    <div>
-                      <span className="font-medium text-gray-600">Status:</span>
-                      <p className="text-gray-900">{response.claimResponse.status}</p>
-                    </div>
-                    <div>
-                      <span className="font-medium text-gray-600">Outcome:</span>
-                      <p className="text-gray-900">{response.claimResponse.outcome}</p>
-                    </div>
-                    <div>
-                      <span className="font-medium text-gray-600">Payment Amount:</span>
-                      <p className="text-gray-900">
-                        ${response.claimResponse.payment.amount.value} {response.claimResponse.payment.amount.currency}
-                      </p>
-                    </div>
-                    <div className="md:col-span-2">
-                      <span className="font-medium text-gray-600">Disposition:</span>
-                      <p className="text-gray-900">{response.claimResponse.disposition}</p>
-                    </div>
-                  </div>
-                </div>
+                <Paper variant="outlined" sx={{ p: 2 }}>
+                  <Typography variant="h6" gutterBottom>
+                    Claim Processing Details
+                  </Typography>
+                  <Divider sx={{ mb: 2 }} />
+                  <Grid container spacing={2}>
+                    <Grid size={{ xs: 12, md: 6 }}>
+                      <Typography variant="caption" color="text.secondary">
+                        Response ID
+                      </Typography>
+                      <Typography variant="body1">{response.claimResponse.id}</Typography>
+                    </Grid>
+                    <Grid size={{ xs: 12, md: 6 }}>
+                      <Typography variant="caption" color="text.secondary">
+                        Status
+                      </Typography>
+                      <Typography variant="body1">{response.claimResponse.status}</Typography>
+                    </Grid>
+                    <Grid size={{ xs: 12, md: 6 }}>
+                      <Typography variant="caption" color="text.secondary">
+                        Outcome
+                      </Typography>
+                      <Typography variant="body1">{response.claimResponse.outcome}</Typography>
+                    </Grid>
+                    <Grid size={{ xs: 12, md: 6 }}>
+                      <Typography variant="caption" color="text.secondary">
+                        Payment Amount
+                      </Typography>
+                      <Typography variant="body1">
+                        ${response.claimResponse.payment.amount.value}{' '}
+                        {response.claimResponse.payment.amount.currency}
+                      </Typography>
+                    </Grid>
+                    <Grid size={{ xs: 12, md: 6 }}>
+                      <Typography variant="caption" color="text.secondary">
+                        Disposition
+                      </Typography>
+                      <Typography variant="body1">{response.claimResponse.disposition}</Typography>
+                    </Grid>
+                  </Grid>
+                </Paper>
               )}
-            </div>
+            </Box>
           )}
-        </div>
-      </div>
-    </div>
+        </Paper>
+      </Box>
   );
 }

@@ -6,7 +6,8 @@ import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import Alert from "@mui/material/Alert";
-import CircularProgress from "@mui/material/CircularProgress";
+import { Quantum } from "ldrs/react";
+import "ldrs/react/Quantum.css";
 
 import CustomDataGrid from "../../_components/CustomDataGrid";
 import type { GridColDef } from "@mui/x-data-grid";
@@ -32,7 +33,12 @@ export default function ProvidersPage() {
   const columns: GridColDef<ProviderRow>[] = [
     { field: "provider_id", headerName: "Provider ID", width: 160 },
     { field: "name", headerName: "Name", flex: 1, width: 200 },
-    { field: "type", headerName: "Type", headerClassName: "last-column", width: 150 },
+    {
+      field: "type",
+      headerName: "Type",
+      headerClassName: "last-column",
+      width: 150,
+    },
   ];
 
   const parseProvidersToRows = (data: any): ProviderRow[] => {
@@ -86,18 +92,17 @@ export default function ProvidersPage() {
     fetchProviders();
   }, []);
 
-
   return (
     <Paper elevation={3} sx={{ p: 3, height: "100%" }}>
-      <Box sx={{display:'flex',justifyContent:'flex-end',m:2}}>
-         <Button
-            variant="outlined"
-            startIcon={<RefreshIcon />}
-            onClick={fetchProviders}
-            disabled={loading}
-          >
-            Refresh
-          </Button>
+      <Box sx={{ display: "flex", justifyContent: "flex-end", m: 2 }}>
+        <Button
+          variant="outlined"
+          startIcon={<RefreshIcon />}
+          onClick={fetchProviders}
+          disabled={loading}
+        >
+          Refresh
+        </Button>
       </Box>
 
       {error && (
@@ -109,13 +114,10 @@ export default function ProvidersPage() {
       <Box>
         {loading ? (
           <Box sx={{ display: "flex", justifyContent: "center", py: 6 }}>
-            <CircularProgress />
+            <Quantum size="45" speed="1.75" color="#5AA9F9" />
           </Box>
         ) : (
-          <CustomDataGrid<ProviderRow>
-            rows={rows}
-            columns={columns}
-          />
+          <CustomDataGrid<ProviderRow> rows={rows} columns={columns} />
         )}
       </Box>
     </Paper>

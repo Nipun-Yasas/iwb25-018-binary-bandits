@@ -1,12 +1,7 @@
-'use client';
+"use client";
 
-import React from 'react';
-import {
-  Card,
-  CardContent,
-  Typography,
-  Box,
-} from '@mui/material';
+import React from "react";
+import { Card, CardContent, Typography, Box } from "@mui/material";
 
 // Simple line chart component using SVG
 interface LineChartData {
@@ -22,16 +17,16 @@ interface SimpleLineChartProps {
   yAxisLabel?: string;
 }
 
-const SimpleLineChart: React.FC<SimpleLineChartProps> = ({ 
-  data, 
-  title, 
-  color = '#2196f3',
+const SimpleLineChart: React.FC<SimpleLineChartProps> = ({
+  data,
+  title,
+  color = "#2196f3",
   height = 300,
-  yAxisLabel = 'Value'
+  yAxisLabel = "Value",
 }) => {
   if (!data || data.length === 0) {
     return (
-      <Card sx={{ height: '100%' }}>
+      <Card sx={{ height: "100%" }}>
         <CardContent>
           <Typography variant="h6" component="h2" gutterBottom>
             {title}
@@ -44,49 +39,63 @@ const SimpleLineChart: React.FC<SimpleLineChartProps> = ({
     );
   }
 
-  const maxValue = Math.max(...data.map(d => d.value));
-  const minValue = Math.min(...data.map(d => d.value));
+  const maxValue = Math.max(...data.map((d) => d.value));
+  const minValue = Math.min(...data.map((d) => d.value));
   const valueRange = maxValue - minValue || 1;
-  
+
   const chartWidth = 400;
   const chartHeight = 200;
   const padding = 40;
 
   // Create points for the line
   const points = data.map((item, index) => {
-    const x = padding + (index * (chartWidth - 2 * padding)) / (data.length - 1);
-    const y = chartHeight - padding - ((item.value - minValue) / valueRange) * (chartHeight - 2 * padding);
+    const x =
+      padding + (index * (chartWidth - 2 * padding)) / (data.length - 1);
+    const y =
+      chartHeight -
+      padding -
+      ((item.value - minValue) / valueRange) * (chartHeight - 2 * padding);
     return { x, y, value: item.value, month: item.month };
   });
 
   // Create path string for the line
   const pathData = points.reduce((path, point, index) => {
-    const command = index === 0 ? 'M' : 'L';
+    const command = index === 0 ? "M" : "L";
     return `${path} ${command} ${point.x} ${point.y}`;
-  }, '');
+  }, "");
 
   // Create area path for gradient fill
   const areaData = `${pathData} L ${points[points.length - 1].x} ${chartHeight - padding} L ${points[0].x} ${chartHeight - padding} Z`;
 
   return (
-    <Card sx={{ height: '100%' }}>
+    <Card sx={{ height: "100%" }}>
       <CardContent>
         <Typography variant="h6" component="h2" gutterBottom>
           {title}
         </Typography>
-        
-        <Box sx={{ width: '100%', overflow: 'auto' }}>
-          <svg width={chartWidth} height={chartHeight + 60} viewBox={`0 0 ${chartWidth} ${chartHeight + 60}`}>
+
+        <Box sx={{ width: "100%", overflow: "auto" }}>
+          <svg
+            width={chartWidth}
+            height={chartHeight + 60}
+            viewBox={`0 0 ${chartWidth} ${chartHeight + 60}`}
+          >
             {/* Define gradient */}
             <defs>
-              <linearGradient id={`gradient-${title.replace(/\s+/g, '-')}`} x1="0%" y1="0%" x2="0%" y2="100%">
+              <linearGradient
+                id={`gradient-${title.replace(/\s+/g, "-")}`}
+                x1="0%"
+                y1="0%"
+                x2="0%"
+                y2="100%"
+              >
                 <stop offset="0%" stopColor={color} stopOpacity="0.3" />
                 <stop offset="100%" stopColor={color} stopOpacity="0.05" />
               </linearGradient>
             </defs>
-            
+
             {/* Grid lines */}
-            {[0, 1, 2, 3, 4].map(i => {
+            {[0, 1, 2, 3, 4].map((i) => {
               const y = padding + (i * (chartHeight - 2 * padding)) / 4;
               const value = maxValue - (i * valueRange) / 4;
               return (
@@ -111,13 +120,13 @@ const SimpleLineChart: React.FC<SimpleLineChartProps> = ({
                 </g>
               );
             })}
-            
+
             {/* Area fill */}
             <path
               d={areaData}
-              fill={`url(#gradient-${title.replace(/\s+/g, '-')})`}
+              fill={`url(#gradient-${title.replace(/\s+/g, "-")})`}
             />
-            
+
             {/* Line */}
             <path
               d={pathData}
@@ -127,7 +136,7 @@ const SimpleLineChart: React.FC<SimpleLineChartProps> = ({
               strokeLinecap="round"
               strokeLinejoin="round"
             />
-            
+
             {/* Data points */}
             {points.map((point, index) => (
               <g key={index}>
@@ -151,15 +160,9 @@ const SimpleLineChart: React.FC<SimpleLineChartProps> = ({
                 </text>
               </g>
             ))}
-            
+
             {/* Y-axis label */}
-            <text
-              x="15"
-              y="20"
-              fontSize="12"
-              fill="#666"
-              fontWeight="bold"
-            >
+            <text x="15" y="20" fontSize="12" fill="#666" fontWeight="bold">
               {yAxisLabel}
             </text>
           </svg>
@@ -178,8 +181,10 @@ interface MonthlyClaimsTrendProps {
   }>;
 }
 
-export const MonthlyClaimsTrend: React.FC<MonthlyClaimsTrendProps> = ({ data }) => {
-  const chartData = data.map(item => ({
+export const MonthlyClaimsTrend: React.FC<MonthlyClaimsTrendProps> = ({
+  data,
+}) => {
+  const chartData = data.map((item) => ({
     month: item.month,
     value: item.claimCount,
   }));
@@ -195,8 +200,10 @@ export const MonthlyClaimsTrend: React.FC<MonthlyClaimsTrendProps> = ({ data }) 
 };
 
 // Monthly claim amounts trend
-export const MonthlyAmountsTrend: React.FC<MonthlyClaimsTrendProps> = ({ data }) => {
-  const chartData = data.map(item => ({
+export const MonthlyAmountsTrend: React.FC<MonthlyClaimsTrendProps> = ({
+  data,
+}) => {
+  const chartData = data.map((item) => ({
     month: item.month,
     value: item.totalAmount,
   }));
@@ -222,7 +229,7 @@ interface FinancialTrendProps {
 }
 
 export const UtilizationTrend: React.FC<FinancialTrendProps> = ({ data }) => {
-  const chartData = data.map(item => ({
+  const chartData = data.map((item) => ({
     month: item.month,
     value: item.utilizationRate,
   }));

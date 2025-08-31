@@ -21,7 +21,11 @@ interface ApprovedTabProps {
 export default function ApprovedTab({ claims, loading }: ApprovedTabProps) {
   return (
     <Box sx={{ p: 3, mb: 3 }}>
-      <ClaimsDataGrid claims={claims} loading={loading} showApprovalActions={false} />
+      <ClaimsDataGrid
+        claims={claims}
+        loading={loading}
+        showApprovalActions={false}
+      />
     </Box>
   );
 }

@@ -1,14 +1,7 @@
-'use client';
+"use client";
 
-import React from 'react';
-import {
-  Card,
-  CardContent,
-  Typography,
-  Box,
-  Grid,
-  Chip,
-} from '@mui/material';
+import React from "react";
+import { Card, CardContent, Typography, Box, Grid, Chip } from "@mui/material";
 import {
   TrendingUp,
   TrendingDown,
@@ -18,7 +11,7 @@ import {
   MonetizationOn,
   Policy,
   HourglassEmpty,
-} from '@mui/icons-material';
+} from "@mui/icons-material";
 
 interface StatCardProps {
   title: string;
@@ -28,18 +21,18 @@ interface StatCardProps {
     value: number;
     isPositive: boolean;
   };
-  color?: 'primary' | 'secondary' | 'success' | 'warning' | 'error' | 'info';
+  color?: "primary" | "secondary" | "success" | "warning" | "error" | "info";
 }
 
-const StatCard: React.FC<StatCardProps> = ({ 
-  title, 
-  value, 
-  icon, 
-  trend, 
-  color = 'primary' 
+const StatCard: React.FC<StatCardProps> = ({
+  title,
+  value,
+  icon,
+  trend,
+  color = "primary",
 }) => {
   const formatValue = (val: string | number): string => {
-    if (typeof val === 'number') {
+    if (typeof val === "number") {
       if (val >= 1000000) {
         return `$${(val / 1000000).toFixed(1)}M`;
       } else if (val >= 1000) {
@@ -52,57 +45,61 @@ const StatCard: React.FC<StatCardProps> = ({
 
   const getGradient = (colorTheme: string) => {
     const gradients = {
-      primary: 'linear-gradient(135deg, #1976d2 0%, #42a5f5 100%)',
-      success: 'linear-gradient(135deg, #2e7d32 0%, #66bb6a 100%)',
-      warning: 'linear-gradient(135deg, #ed6c02 0%, #ff9800 100%)',
-      error: 'linear-gradient(135deg, #d32f2f 0%, #f44336 100%)',
-      info: 'linear-gradient(135deg, #0288d1 0%, #03a9f4 100%)',
-      secondary: 'linear-gradient(135deg, #7b1fa2 0%, #9c27b0 100%)',
+      primary: "linear-gradient(135deg, #1976d2 0%, #42a5f5 100%)",
+      success: "linear-gradient(135deg, #2e7d32 0%, #66bb6a 100%)",
+      warning: "linear-gradient(135deg, #ed6c02 0%, #ff9800 100%)",
+      error: "linear-gradient(135deg, #d32f2f 0%, #f44336 100%)",
+      info: "linear-gradient(135deg, #0288d1 0%, #03a9f4 100%)",
+      secondary: "linear-gradient(135deg, #7b1fa2 0%, #9c27b0 100%)",
     };
     return gradients[colorTheme as keyof typeof gradients] || gradients.primary;
   };
 
   return (
-    <Card 
-      sx={{ 
-        height: '100%',
+    <Card
+      sx={{
+        height: "100%",
         borderRadius: 4,
-        border: '1px solid rgba(255, 255, 255, 0.2)',
-        background: 'rgba(255, 255, 255, 0.95)',
-        backdropFilter: 'blur(20px)',
-        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
-        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-        overflow: 'hidden',
-        position: 'relative',
-        '&:hover': {
-          transform: 'translateY(-8px) scale(1.02)',
-          boxShadow: '0 20px 40px rgba(0, 0, 0, 0.15)',
+        border: "1px solid rgba(255, 255, 255, 0.2)",
+        backdropFilter: "blur(20px)",
+        boxShadow: "0 8px 32px rgba(0, 0, 0, 0.1)",
+        transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+        overflow: "hidden",
+        position: "relative",
+        "&:hover": {
+          transform: "translateY(-8px) scale(1.02)",
+          boxShadow: "0 20px 40px rgba(0, 0, 0, 0.15)",
         },
-        '&::before': {
+        "&::before": {
           content: '""',
-          position: 'absolute',
+          position: "absolute",
           top: 0,
           left: 0,
           right: 0,
-          height: '4px',
+          height: "4px",
           background: getGradient(color),
-        }
+        },
       }}
     >
-      <CardContent sx={{ p: 3, height: '100%' }}>
-        <Box display="flex" alignItems="flex-start" justifyContent="space-between" mb={2}>
-          <Box 
+      <CardContent sx={{ p: 3, height: "100%" }}>
+        <Box
+          display="flex"
+          alignItems="flex-start"
+          justifyContent="space-between"
+          mb={2}
+        >
+          <Box
             sx={{
               p: 2,
               borderRadius: 3,
               background: getGradient(color),
-              color: 'white',
-              boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)',
+              color: "white",
+              boxShadow: "0 4px 20px rgba(0, 0, 0, 0.15)",
               minWidth: 56,
               minHeight: 56,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
             }}
           >
             {icon}
@@ -110,42 +107,44 @@ const StatCard: React.FC<StatCardProps> = ({
           {trend && (
             <Chip
               icon={trend.isPositive ? <TrendingUp /> : <TrendingDown />}
-              label={`${trend.isPositive ? '+' : '-'}${Math.abs(trend.value)}%`}
+              label={`${trend.isPositive ? "+" : "-"}${Math.abs(trend.value)}%`}
               size="small"
               sx={{
-                backgroundColor: trend.isPositive ? 'success.main' : 'error.main',
-                color: 'white',
-                fontWeight: 'bold',
-                '& .MuiChip-icon': {
-                  color: 'white'
-                }
+                backgroundColor: trend.isPositive
+                  ? "success.main"
+                  : "error.main",
+                color: "white",
+                fontWeight: "bold",
+                "& .MuiChip-icon": {
+                  color: "white",
+                },
               }}
             />
           )}
         </Box>
-        
+
         <Box>
-          <Typography 
-            variant="h3" 
-            component="div" 
+          <Typography
+            variant="h3"
+            component="div"
             fontWeight="bold"
             sx={{
               background: getGradient(color),
-              backgroundClip: 'text',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
+              backgroundClip: "text",
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent",
               mb: 1,
             }}
           >
             {formatValue(value)}
           </Typography>
-          <Typography 
-            variant="body1" 
+          <Typography
+            variant="body1"
             color="text.secondary"
             fontWeight="medium"
-            sx={{ 
+            sx={{
               lineHeight: 1.2,
-              fontSize: '0.95rem'
+              fontSize: "0.95rem",
             }}
           >
             {title}
@@ -179,7 +178,7 @@ const StatCards: React.FC<StatCardsProps> = ({ data }) => {
           trend={{ value: 12, isPositive: true }}
         />
       </Grid>
-      
+
       <Grid size={{ xs: 12, sm: 6, md: 4 }}>
         <StatCard
           title="Healthcare Providers"
@@ -189,7 +188,7 @@ const StatCards: React.FC<StatCardsProps> = ({ data }) => {
           trend={{ value: 5, isPositive: true }}
         />
       </Grid>
-      
+
       <Grid size={{ xs: 12, sm: 6, md: 4 }}>
         <StatCard
           title="Total Claims"
@@ -199,7 +198,7 @@ const StatCards: React.FC<StatCardsProps> = ({ data }) => {
           trend={{ value: 8, isPositive: true }}
         />
       </Grid>
-      
+
       <Grid size={{ xs: 12, sm: 6, md: 4 }}>
         <StatCard
           title="Claim Amount"
@@ -209,7 +208,7 @@ const StatCards: React.FC<StatCardsProps> = ({ data }) => {
           trend={{ value: 15, isPositive: true }}
         />
       </Grid>
-      
+
       <Grid size={{ xs: 12, sm: 6, md: 4 }}>
         <StatCard
           title="Active Policies"
@@ -219,7 +218,7 @@ const StatCards: React.FC<StatCardsProps> = ({ data }) => {
           trend={{ value: 3, isPositive: false }}
         />
       </Grid>
-      
+
       <Grid size={{ xs: 12, sm: 6, md: 4 }}>
         <StatCard
           title="Pending Claims"

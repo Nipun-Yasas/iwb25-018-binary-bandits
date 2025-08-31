@@ -6,7 +6,9 @@ import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import Alert from "@mui/material/Alert";
-import CircularProgress from "@mui/material/CircularProgress";
+import { Quantum } from "ldrs/react";
+import "ldrs/react/Quantum.css";
+
 import type { GridColDef } from "@mui/x-data-grid";
 
 import CustomDataGrid from "../../_components/CustomDataGrid";
@@ -38,13 +40,21 @@ export default function Page() {
     { field: "name", headerName: "Name", flex: 1, minWidth: 180 },
     { field: "dob", headerName: "DOB", width: 140 },
     { field: "gender", headerName: "Gender", width: 120 },
-    { field: "address", headerName: "Address", flex: 1, minWidth: 220, headerClassName: "last-column" },
+    {
+      field: "address",
+      headerName: "Address",
+      flex: 1,
+      minWidth: 220,
+      headerClassName: "last-column",
+    },
   ];
 
   const toRows = (data: any): PatientRow[] => {
     // Accept shapes: { persons: [...] } or { patients: [...] } or [...] or stringified array
     let list: Patient[] = [];
-    const payload = Array.isArray(data) ? data : data?.persons ?? data?.patients;
+    const payload = Array.isArray(data)
+      ? data
+      : (data?.persons ?? data?.patients);
 
     if (Array.isArray(payload)) {
       list = payload as Patient[];
@@ -58,7 +68,10 @@ export default function Page() {
     }
 
     return (list || []).map((p, idx) => {
-      const pid = p.patient_id !== undefined && p.patient_id !== null ? String(p.patient_id) : `tmp-${idx}`;
+      const pid =
+        p.patient_id !== undefined && p.patient_id !== null
+          ? String(p.patient_id)
+          : `tmp-${idx}`;
       // Normalize DOB to YYYY-MM-DD if it's an ISO string with time
       const dob =
         typeof p.dob === "string" && p.dob.includes("T")
@@ -124,7 +137,7 @@ export default function Page() {
       <Box sx={{ minHeight: 360 }}>
         {loading ? (
           <Box sx={{ display: "flex", justifyContent: "center", py: 6 }}>
-            <CircularProgress />
+            <Quantum size="45" speed="1.75" color="#5AA9F9" />
           </Box>
         ) : (
           <CustomDataGrid<PatientRow> rows={rows} columns={columns} />

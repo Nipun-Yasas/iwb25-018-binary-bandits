@@ -20,7 +20,11 @@ interface RejectedTabProps {
 export default function RejectedTab({ claims, loading }: RejectedTabProps) {
   return (
     <Box sx={{ p: 3, mb: 3 }}>
-      <ClaimsDataGrid claims={claims} loading={loading} showApprovalActions={false} />
+      <ClaimsDataGrid
+        claims={claims}
+        loading={loading}
+        showApprovalActions={false}
+      />
     </Box>
   );
 }

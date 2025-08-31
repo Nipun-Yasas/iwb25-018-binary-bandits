@@ -1,6 +1,6 @@
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
-
+import { BookOpen } from "lucide-react";
 
 export default function CustomAppTitle() {
   return (
@@ -15,6 +15,7 @@ export default function CustomAppTitle() {
       }}
     >
      <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+          <BookOpen size={20} color="primary.main" />
           <Typography
             variant="h5"
             sx={{
@@ -25,7 +26,7 @@ export default function CustomAppTitle() {
               WebkitTextFillColor: "transparent",
             }}
           >
-            Ballerina
+            FastClaim
           </Typography>
         </Box>
     </Box>

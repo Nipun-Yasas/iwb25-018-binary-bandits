@@ -17,7 +17,7 @@ import axios from "axios";
 type FormValues = {
   patient_id?: string; // optional, numeric
   name: string;
-  dob: string;    // YYYY-MM-DD
+  dob: string; // YYYY-MM-DD
   gender: string; // Male | Female | Other
   address: string;
 };
@@ -29,7 +29,7 @@ const validationSchema = Yup.object({
     .trim()
     .matches(/^\d+$/, "Patient ID must be a number")
     .max(12, "Patient ID is too long")
-    .required(), 
+    .required(),
   name: Yup.string().trim().min(2).max(100).required("Name is required"),
   dob: Yup.string()
     .required("Date of birth is required")
@@ -42,21 +42,36 @@ const validationSchema = Yup.object({
       today.setHours(0, 0, 0, 0);
       return d.getTime() <= today.getTime();
     }),
-  gender: Yup.string().oneOf(GENDERS as unknown as string[]).required("Gender is required"),
-  address: Yup.string().trim().min(5, "Address too short").max(200).required("Address is required"),
+  gender: Yup.string()
+    .oneOf(GENDERS as unknown as string[])
+    .required("Gender is required"),
+  address: Yup.string()
+    .trim()
+    .min(5, "Address too short")
+    .max(200)
+    .required("Address is required"),
 });
 
 export default function AddPersonForm() {
-  const [submitStatus, setSubmitStatus] = React.useState<{ success: boolean; message: string } | null>(null);
+  const [submitStatus, setSubmitStatus] = React.useState<{
+    success: boolean;
+    message: string;
+  } | null>(null);
 
   return (
-    <Paper elevation={3} sx={{ p: 3, height: "100%",}}>
+    <Paper elevation={3} sx={{ p: 3, height: "100%" }}>
       <Typography variant="h5" fontWeight={700} sx={{ mb: 2 }}>
         Add Patient
       </Typography>
 
       <Formik<FormValues>
-        initialValues={{ patient_id: "", name: "", dob: "", gender: "", address: "" }}
+        initialValues={{
+          patient_id: "",
+          name: "",
+          dob: "",
+          gender: "",
+          address: "",
+        }}
         validationSchema={validationSchema}
         validateOnBlur
         validateOnChange
@@ -72,7 +87,10 @@ export default function AddPersonForm() {
               address: values.address.trim(),
             };
             // Adjust endpoint if your backend differs
-            const res = await axios.post("http://localhost:8080/patients", payload);
+            const res = await axios.post(
+              "http://localhost:8080/patients",
+              payload
+            );
             setSubmitStatus({
               success: true,
               message: res.data?.message || "Patient added successfully!",
@@ -91,7 +109,16 @@ export default function AddPersonForm() {
           }
         }}
       >
-        {({ values, errors, touched, handleChange, handleBlur, isSubmitting, setTouched, submitForm }) => (
+        {({
+          values,
+          errors,
+          touched,
+          handleChange,
+          handleBlur,
+          isSubmitting,
+          setTouched,
+          submitForm,
+        }) => (
           <Form noValidate>
             <Stack spacing={3}>
               <TextField
@@ -174,7 +201,13 @@ export default function AddPersonForm() {
                 disabled={isSubmitting}
                 onClick={() => {
                   setTouched(
-                    { patient_id: true, name: true, dob: true, gender: true, address: true },
+                    {
+                      patient_id: true,
+                      name: true,
+                      dob: true,
+                      gender: true,
+                      address: true,
+                    },
                     true
                   );
                   submitForm();
@@ -184,7 +217,10 @@ export default function AddPersonForm() {
               </Button>
 
               {submitStatus && (
-                <Alert severity={submitStatus.success ? "success" : "error"} sx={{ mt: 1 }}>
+                <Alert
+                  severity={submitStatus.success ? "success" : "error"}
+                  sx={{ mt: 1 }}
+                >
                   {submitStatus.message}
                 </Alert>
               )}
@@ -192,7 +228,6 @@ export default function AddPersonForm() {
           </Form>
         )}
       </Formik>
-
-      </Paper>
+    </Paper>
   );
 }

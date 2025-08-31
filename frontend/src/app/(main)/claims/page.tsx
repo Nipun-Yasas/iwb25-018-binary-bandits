@@ -22,16 +22,14 @@ type ClaimStatus = "pending" | "approved" | "rejected" | string;
 interface Claim {
   id: string | number;
   status?: ClaimStatus;
-
-  // Required claim fields to render
-  claim_id: string;
-  patient_id: string | number;
-  policy_id: string | number;
-  provider_id: string | number;
-  diagnosis_code: string;
-  procedure_code: string;
-  claim_amount: number;
-  decision_reason?: string | null;
+  claimId: string;
+  patientId: string | number;
+  policyId: string | number;
+  providerId: string | number;
+  diagnosisCode: string;
+  procedureCode: string;
+  amount: number;
+  decisionReason?: string | null;
 }
 
 interface SnackbarState {
@@ -52,23 +50,25 @@ export default function Page() {
   });
 
   const toClaims = (data: any): Claim[] => {
-    const list = Array.isArray(data) ? data : data?.data ?? data?.claims ?? data;
+    // API shape: { success, data: [...], pagination: {...} }
+    const list = Array.isArray(data)
+      ? data
+      : (data?.data ?? data?.claims ?? []);
     if (!Array.isArray(list)) return [];
 
     return list.map((r: any, idx: number): Claim => {
-      const claimId = String(r.claim_id ?? r.id ?? `row-${idx}`);
       const status = (r.status ?? "").toString().trim().toLowerCase();
       return {
-        id: claimId,
+        id: r.claimId,
+        claimId: r.claimId ?? "",
+        patientId: r.patientId ?? "",
+        policyId: r.policyId ?? "",
+        providerId: r.providerId ?? "",
+        diagnosisCode: r.diagnosisCode ?? "",
         status,
-        claim_id: claimId,
-        patient_id: r.patient_id ?? "",
-        policy_id: r.policy_id ?? "",
-        provider_id: r.provider_id ?? "",
-        diagnosis_code: r.diagnosis_code ?? "",
-        procedure_code: r.procedure_code ?? "",
-        claim_amount: Number(r.claim_amount ?? 0),
-        decision_reason: r.decision_reason ?? null,
+        procedureCode: r.procedureCode ?? "",
+        amount: Number(r.amount ?? 0),
+        decisionReason: r.decisionReason ?? null,
       };
     });
   };
@@ -76,6 +76,7 @@ export default function Page() {
   const fetchClaims = async (): Promise<void> => {
     setLoading(true);
     try {
+      // If your backend is /api/claims, change to that URL.
       const res = await fetch("http://localhost:8080/claims", {
         method: "GET",
         headers: { "Content-Type": "application/json" },
@@ -88,7 +89,8 @@ export default function Page() {
       const json = await res.json();
       setClaims(toClaims(json));
     } catch (error: unknown) {
-      const msg = error instanceof Error ? error.message : "Failed to fetch claims";
+      const msg =
+        error instanceof Error ? error.message : "Failed to fetch claims";
       setClaims([]);
       showSnackbar(msg, "error");
     } finally {
@@ -114,10 +116,14 @@ export default function Page() {
 
   const getFilteredClaims = (status: ClaimStatus): Claim[] => {
     if (status === "all") return claims;
-    return claims.filter((t) => (t.status || "").toString().toLowerCase() === status);
+    return claims.filter(
+      (t) => (t.status || "").toString().toLowerCase() === status
+    );
   };
 
-  const pendingCount = claims.filter((l) => (l.status || "").toString().toLowerCase() === "pending").length;
+  const pendingCount = claims.filter(
+    (l) => (l.status || "").toString().toLowerCase() === "pending"
+  ).length;
 
   const tabProps = {
     claims,
@@ -166,7 +172,11 @@ export default function Page() {
           onClose={handleCloseSnackbar}
           anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
         >
-          <Alert onClose={handleCloseSnackbar} severity={snackbar.severity} sx={{ width: "100%" }}>
+          <Alert
+            onClose={handleCloseSnackbar}
+            severity={snackbar.severity}
+            sx={{ width: "100%" }}
+          >
             {snackbar.message}
           </Alert>
         </Snackbar>

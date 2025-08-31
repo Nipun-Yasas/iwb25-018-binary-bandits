@@ -8,14 +8,14 @@ import {
   CardContent,
   Typography,
   Alert,
-  CircularProgress,
   IconButton,
   InputAdornment
 } from '@mui/material';
 import { Visibility, VisibilityOff, PersonAdd } from '@mui/icons-material';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-
+import { Quantum } from "ldrs/react";
+import "ldrs/react/Quantum.css";
 interface RegisterFormData {
   username: string;
   email: string;
@@ -260,7 +260,7 @@ export default function RegisterPage() {
             >
               {loading ? (
                 <div className="flex items-center gap-2">
-                  <CircularProgress size={20} color="inherit" />
+                  <Quantum size="45" speed="1.75" color="#5AA9F9" />
                   {message?.type === 'success' && message.text.includes('logged in') 
                     ? 'Logging in...' 
                     : 'Creating Account...'

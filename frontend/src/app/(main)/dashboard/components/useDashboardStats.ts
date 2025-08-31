@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from "react";
 
 // Types for dashboard statistics
 export interface DashboardStats {
@@ -106,12 +106,15 @@ export const useDashboardStats = (): UseDashboardStatsReturn => {
       setLoading(true);
       setError(null);
 
-      const response = await fetch('http://localhost:8080/dashboard/statistics', {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
+      const response = await fetch(
+        "http://localhost:8080/dashboard/statistics",
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -122,12 +125,12 @@ export const useDashboardStats = (): UseDashboardStatsReturn => {
       if (result.success) {
         setData(result.data);
       } else {
-        throw new Error(result.message || 'Failed to fetch statistics');
+        throw new Error(result.message || "Failed to fetch statistics");
       }
     } catch (err) {
-      console.error('Error fetching dashboard statistics:', err);
-      setError(err instanceof Error ? err.message : 'An error occurred');
-      
+      console.error("Error fetching dashboard statistics:", err);
+      setError(err instanceof Error ? err.message : "An error occurred");
+
       // Set mock data for development/demo purposes
       setData(getMockDashboardStats());
     } finally {
@@ -163,18 +166,18 @@ const getMockDashboardStats = (): DashboardStats => {
         rejected: 32,
         underReview: 17,
       },
-      totalClaimAmount: 485750.50,
+      totalClaimAmount: 485750.5,
       avgClaimAmount: 1499.23,
       pendingClaims: 89,
       approvedClaims: 186,
       rejectedClaims: 32,
       monthlyTrends: [
-        { month: 'Jan 2025', claimCount: 45, totalAmount: 67500.0 },
-        { month: 'Feb 2025', claimCount: 52, totalAmount: 78000.0 },
-        { month: 'Mar 2025', claimCount: 48, totalAmount: 72000.0 },
-        { month: 'Apr 2025', claimCount: 59, totalAmount: 88500.0 },
-        { month: 'May 2025', claimCount: 55, totalAmount: 82500.0 },
-        { month: 'Jun 2025', claimCount: 65, totalAmount: 97500.0 },
+        { month: "Jan 2025", claimCount: 45, totalAmount: 67500.0 },
+        { month: "Feb 2025", claimCount: 52, totalAmount: 78000.0 },
+        { month: "Mar 2025", claimCount: 48, totalAmount: 72000.0 },
+        { month: "Apr 2025", claimCount: 59, totalAmount: 88500.0 },
+        { month: "May 2025", claimCount: 55, totalAmount: 82500.0 },
+        { month: "Jun 2025", claimCount: 65, totalAmount: 97500.0 },
       ],
     },
     providers: {
@@ -188,37 +191,37 @@ const getMockDashboardStats = (): DashboardStats => {
       },
       topProviders: [
         {
-          providerId: 'HOSP001',
-          name: 'City General Hospital',
-          type: 'Hospital',
+          providerId: "HOSP001",
+          name: "City General Hospital",
+          type: "Hospital",
           claimCount: 89,
           totalAmount: 156750.0,
         },
         {
-          providerId: 'DR567',
-          name: 'Dr. Sarah Johnson',
-          type: 'Doctor',
+          providerId: "DR567",
+          name: "Dr. Sarah Johnson",
+          type: "Doctor",
           claimCount: 67,
           totalAmount: 89500.0,
         },
         {
-          providerId: 'CLIN003',
-          name: 'Wellness Medical Clinic',
-          type: 'Clinic',
+          providerId: "CLIN003",
+          name: "Wellness Medical Clinic",
+          type: "Clinic",
           claimCount: 45,
           totalAmount: 67500.0,
         },
         {
-          providerId: 'DR234',
-          name: 'Dr. Michael Brown',
-          type: 'Doctor',
+          providerId: "DR234",
+          name: "Dr. Michael Brown",
+          type: "Doctor",
           claimCount: 38,
           totalAmount: 52750.0,
         },
         {
-          providerId: 'LAB001',
-          name: 'Advanced Diagnostics Lab',
-          type: 'Laboratory',
+          providerId: "LAB001",
+          name: "Advanced Diagnostics Lab",
+          type: "Laboratory",
           claimCount: 32,
           totalAmount: 45000.0,
         },
@@ -252,44 +255,44 @@ const getMockDashboardStats = (): DashboardStats => {
       totalPatients: 1250,
     },
     financial: {
-      totalClaimAmount: 485750.50,
+      totalClaimAmount: 485750.5,
       totalCoverageAmount: 8900000.0,
       avgClaimAmount: 1499.23,
       avgCoverageAmount: 10000.0,
       claimUtilizationRate: 5.46,
       monthlyTrends: [
         {
-          month: 'Jan 2025',
+          month: "Jan 2025",
           totalClaims: 67500.0,
           totalCoverage: 1200000.0,
           utilizationRate: 5.62,
         },
         {
-          month: 'Feb 2025',
+          month: "Feb 2025",
           totalClaims: 78000.0,
           totalCoverage: 1250000.0,
           utilizationRate: 6.24,
         },
         {
-          month: 'Mar 2025',
+          month: "Mar 2025",
           totalClaims: 72000.0,
           totalCoverage: 1300000.0,
           utilizationRate: 5.54,
         },
         {
-          month: 'Apr 2025',
+          month: "Apr 2025",
           totalClaims: 88500.0,
           totalCoverage: 1350000.0,
           utilizationRate: 6.56,
         },
         {
-          month: 'May 2025',
+          month: "May 2025",
           totalClaims: 82500.0,
           totalCoverage: 1400000.0,
           utilizationRate: 5.89,
         },
         {
-          month: 'Jun 2025',
+          month: "Jun 2025",
           totalClaims: 97500.0,
           totalCoverage: 1450000.0,
           utilizationRate: 6.72,

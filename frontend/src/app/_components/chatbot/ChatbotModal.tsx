@@ -12,7 +12,6 @@ import {
   Typography,
   Paper,
   Avatar,
-  CircularProgress,
   Chip,
   IconButton,
   Divider,
@@ -25,6 +24,8 @@ import {
   AttachFile as AttachFileIcon,
 } from '@mui/icons-material';
 import { styled } from '@mui/material/styles';
+import { Quantum } from "ldrs/react";
+import "ldrs/react/Quantum.css";
 
 const ChatContainer = styled(Box)(({ theme }) => ({
   height: '400px',
@@ -220,7 +221,7 @@ const ChatbotModal: React.FC<ChatbotModalProps> = ({ open, onClose }) => {
               </Avatar>
               <MessageBubble isUser={false}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <CircularProgress size={16} />
+                  <Quantum size="45" speed="1.75" color="#5AA9F9" />
                   <Typography variant="body2">Analyzing claim...</Typography>
                 </Box>
               </MessageBubble>

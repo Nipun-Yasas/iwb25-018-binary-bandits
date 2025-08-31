@@ -38,7 +38,6 @@ export default function AddInsurerPage() {
 
   return (
     <Paper elevation={3} sx={{ p: 3, height: "100%" }}>
-
       <Formik<FormValues>
         initialValues={{ insurer_id: "", name: "" }}
         validationSchema={validationSchema}

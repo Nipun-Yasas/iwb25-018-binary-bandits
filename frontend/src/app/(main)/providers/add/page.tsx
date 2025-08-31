@@ -48,9 +48,6 @@ export default function AddProviderPage() {
     message: string;
   } | null>(null);
 
-
-  
-
   return (
     <Paper elevation={3} sx={{ p: 3, height: "100%" }}>
       <Formik<FormValues>

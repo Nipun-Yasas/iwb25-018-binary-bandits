@@ -13,7 +13,6 @@ interface LayoutProps {
 }
 
 export default function Layout({ children }: LayoutProps) {
-
   return (
     <>
       <DashboardLayout
@@ -22,10 +21,7 @@ export default function Layout({ children }: LayoutProps) {
           toolbarActions: CustomToolbarActions,
         }}
       >
-        <PageContainer>
-         
-            {children}
-        </PageContainer>
+        <PageContainer>{children}</PageContainer>
       </DashboardLayout>
       <Chatbot />
     </>

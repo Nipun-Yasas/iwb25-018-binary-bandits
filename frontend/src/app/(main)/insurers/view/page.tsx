@@ -6,7 +6,8 @@ import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import Alert from "@mui/material/Alert";
-import CircularProgress from "@mui/material/CircularProgress";
+import { Quantum } from "ldrs/react";
+import "ldrs/react/Quantum.css";
 import type { GridColDef } from "@mui/x-data-grid";
 
 import CustomDataGrid from "../../_components/CustomDataGrid";
@@ -29,7 +30,12 @@ export default function Page() {
 
   const columns: GridColDef<InsurerRow>[] = [
     { field: "insurer_id", headerName: "Insurer ID", width: 160 },
-    { field: "name", headerName: "Name",headerClassName: "last-column", width: 200 },
+    {
+      field: "name",
+      headerName: "Name",
+      headerClassName: "last-column",
+      width: 200,
+    },
   ];
 
   const toRows = (data: any): InsurerRow[] => {
@@ -82,18 +88,17 @@ export default function Page() {
     fetchInsurers();
   }, []);
 
-
   return (
     <Paper elevation={2} sx={{ p: 3, width: "100%" }}>
-      <Box sx={{ display: 'flex', justifyContent: 'flex-end',m:2 }}>
+      <Box sx={{ display: "flex", justifyContent: "flex-end", m: 2 }}>
         <Button
-            variant="outlined"
-            startIcon={<RefreshIcon />}
-            onClick={fetchInsurers}
-            disabled={loading}
-          >
-            Refresh
-          </Button>
+          variant="outlined"
+          startIcon={<RefreshIcon />}
+          onClick={fetchInsurers}
+          disabled={loading}
+        >
+          Refresh
+        </Button>
       </Box>
 
       {error && (
@@ -105,13 +110,10 @@ export default function Page() {
       <Box sx={{ minHeight: 360 }}>
         {loading ? (
           <Box sx={{ display: "flex", justifyContent: "center", py: 6 }}>
-            <CircularProgress />
+            <Quantum size="45" speed="1.75" color="#5AA9F9" />
           </Box>
         ) : (
-          <CustomDataGrid<InsurerRow>
-            rows={rows}
-            columns={columns}
-          />
+          <CustomDataGrid<InsurerRow> rows={rows} columns={columns} />
         )}
       </Box>
     </Paper>

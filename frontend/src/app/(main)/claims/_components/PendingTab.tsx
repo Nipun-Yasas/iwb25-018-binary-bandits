@@ -17,10 +17,7 @@ interface PendingTabProps {
   loading: boolean;
 }
 
-export default function PendingTab({
-  claims,
-  loading,
-}: PendingTabProps) {
+export default function PendingTab({ claims, loading }: PendingTabProps) {
   return (
     <Box sx={{ p: 3, mb: 3 }}>
       <ClaimsDataGrid
