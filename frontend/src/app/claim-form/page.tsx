@@ -153,7 +153,7 @@ export default function ClaimForm() {
                   name="patientId"
                   value={formData.patientId}
                   onChange={handleInputChange}
-                  placeholder="e.g., 12345"
+                  placeholder="e.g., 00001"
                 />
               </Grid>
               <Grid size={{ xs: 12, md: 6 }}>
@@ -165,7 +165,7 @@ export default function ClaimForm() {
                   name="providerId"
                   value={formData.providerId}
                   onChange={handleInputChange}
-                  placeholder="e.g., PROV001"
+                  placeholder="e.g., DOC001 or HOS001"
                 />
               </Grid>
 
@@ -178,7 +178,7 @@ export default function ClaimForm() {
                   name="policyId"
                   value={formData.policyId}
                   onChange={handleInputChange}
-                  placeholder="e.g., POL123456"
+                  placeholder="e.g., POL001"
                 />
               </Grid>
               <Grid size={{ xs: 12, md: 6 }}>
@@ -205,7 +205,7 @@ export default function ClaimForm() {
                   name="diagnosisCode"
                   value={formData.diagnosisCode}
                   onChange={handleInputChange}
-                  placeholder="e.g., K21.9"
+                  placeholder="e.g., D001"
                 />
               </Grid>
               <Grid size={{ xs: 12, md: 6 }}>
@@ -230,7 +230,7 @@ export default function ClaimForm() {
                   name="procedureCode"
                   value={formData.procedureCode}
                   onChange={handleInputChange}
-                  placeholder="e.g., 99213"
+                  placeholder="e.g., PROC001"
                 />
               </Grid>
               <Grid size={{ xs: 12, md: 6 }}>

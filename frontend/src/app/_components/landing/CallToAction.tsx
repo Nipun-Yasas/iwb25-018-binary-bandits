@@ -57,7 +57,7 @@ export default function CallToAction() {
         alignItems: "center",
         justifyContent: "space-between",
         position: "relative",
-        py: 4,
+        p: { xs: 2, md: 6 },
         mb: { xs: 0, md: 6 },
       }}
     >
@@ -93,36 +93,33 @@ export default function CallToAction() {
           Automate Health Insurance Claims End‑to‑End
         </Typography>
 
-        <Typography variant="h6" sx={{ display: "block", mb: 2 }} color="text.secondary">
-          Submit FHIR claims, validate eligibility and coverage, detect duplicates/fraud,
-          and return instant approvals or rejections.
+        <Typography
+          variant="h6"
+          sx={{ display: "block", mb: 2 }}
+          color="text.secondary"
+        >
+          Submit FHIR claims, validate eligibility and coverage, detect
+          duplicates/fraud, and return instant approvals or rejections.
         </Typography>
         <Typography variant="body1" color="text.secondary">
-          Real-time audit dashboard and notifications via Email/SMS/Slack powered by Ballerina
-          connectors. Built for hackathon speed, ready for production.
+          Real-time audit dashboard and notifications via Email/SMS/Slack
+          powered by Ballerina connectors. Built for hackathon speed, ready for
+          production.
         </Typography>
 
-        <Box sx={{ mt: 4, display: "flex", gap: 2, justifyContent: { xs: "center", md: "flex-start" }, flexWrap: "wrap" }}>
-          <Link href="/claim" passHref>
-            <Button
-              variant="contained"
-              size="large"
-              sx={{
-                background: "linear-gradient(135deg, #1976d2 0%, #00bfa5 100%)",
-                px: 3,
-                "&:hover": {
-                  background: "linear-gradient(135deg, #1565c0 0%, #009a84 100%)",
-                },
-              }}
-            >
-              Submit Test Claim
-            </Button>
-          </Link>
+        <Box
+          sx={{
+            mt: 4,
+            display: "flex",
+            gap: 2,
+            justifyContent: { xs: "center", md: "flex-start" },
+            flexWrap: "wrap",
+          }}
+        >
           <Link href="/dashboard" passHref>
-            <Button variant="outlined" size="large">Open Dashboard</Button>
-          </Link>
-          <Link href="/docs" passHref>
-            <Button size="large">View API Docs</Button>
+            <Button variant="outlined" size="large">
+              Open Dashboard
+            </Button>
           </Link>
         </Box>
       </Box>
@@ -187,15 +184,12 @@ export default function CallToAction() {
         <Image
           src="/img3.svg"
           alt="Automated insurance claims"
-          width={320}
-          height={320}
+          width={650}
+          height={650}
           priority
           style={{
             position: "relative",
             zIndex: 2,
-            height: "auto",
-            width: "100%",
-            maxWidth: "420px",
             filter: "drop-shadow(0 12px 30px rgba(25,118,210,0.25))",
           }}
         />

@@ -79,17 +79,6 @@ const NAVIGATION: Navigation = [
       },
     ],
   },
-
-  {
-    segment: 'reports',
-    title: 'Reports',
-    icon: <BarChartIcon />,
-  },
-  {
-    segment: 'profile',
-    title: 'Profile',
-    icon: <AccountCircleIcon />,
-  },
 ];
 
 export default NAVIGATION;

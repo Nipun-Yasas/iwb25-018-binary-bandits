@@ -20,7 +20,7 @@ export default function Hero() {
         alignItems: "center",
         justifyContent: "space-between",
         position: "relative",
-        minHeight: { xs: "auto", md: "90vh" },
+        minHeight: { xs: "auto", md: "85vh" },
         width: "100%",
         mt: 3,
       }}
@@ -48,7 +48,7 @@ export default function Hero() {
           position: "relative",
           justifyContent: "center",
           zIndex: 2,
-          p: 2.5,
+          p: { xs: 2, md: 8 },
         }}
       >
         <motion.div
@@ -79,8 +79,9 @@ export default function Hero() {
             color="text.secondary"
             sx={{ mt: 3, mb: 4, fontWeight: 400 }}
           >
-            Submit FHIR claims, validate eligibility and coverage, block duplicates/fraud,
-            and return instant approvals or rejections — powered by Ballerina.
+            Submit FHIR claims, validate eligibility and coverage, block
+            duplicates/fraud, and return instant approvals or rejections —
+            powered by Ballerina.
           </Typography>
 
           {/* Feature highlights */}
@@ -111,6 +112,11 @@ export default function Hero() {
                 Duplicate/Fraud Checks
               </Typography>
             </Box>
+            <Link href="/dashboard" passHref>
+              <Button variant="outlined" size="large">
+                Open Dashboard
+              </Button>
+            </Link>
           </Box>
 
           <Box
@@ -120,52 +126,7 @@ export default function Hero() {
               flexDirection: { xs: "column", sm: "row" },
               justifyContent: "center",
             }}
-          >
-            <Link href="/claim" passHref>
-              <Button
-                variant="contained"
-                size="large"
-                sx={{
-                  background:
-                    "linear-gradient(135deg, #1976d2 0%, #00bfa5 100%)",
-                  px: { xs: 1, md: 2 },
-                  py: { xs: 1, md: 1.2 },
-                  borderRadius: 2,
-                  fontSize: { xs: "0.9rem", md: "1rem" },
-                  "&:hover": {
-                    background:
-                      "linear-gradient(135deg, #1565c0 0%, #009a84 100%)",
-                    transform: "translateY(-2px)",
-                    boxShadow: "0 8px 25px rgba(25,118,210,0.3)",
-                  },
-                  transition: "all 0.3s ease",
-                }}
-              >
-                Submit Test Claim
-              </Button>
-            </Link>
-            <Link href="/dashboard" passHref>
-              <Button
-                variant="outlined"
-                size="large"
-                sx={{
-                  borderColor: "#1976d2",
-                  color: "#1976d2",
-                  px: { xs: 1, md: 2 },
-                  py: { xs: 1, md: 1.2 },
-                  borderRadius: 2,
-                  fontSize: { xs: "0.9rem", md: "1rem" },
-                  "&:hover": {
-                    borderColor: "#00bfa5",
-                    color: "#00bfa5",
-                    backgroundColor: "rgba(0,191,165,0.06)",
-                  },
-                }}
-              >
-                Open Dashboard
-              </Button>
-            </Link>
-          </Box>
+          ></Box>
         </motion.div>
       </Box>
 
@@ -196,7 +157,7 @@ export default function Hero() {
             height: "60%",
             width: "60%",
             left: "20%",
-            top: "50%",
+            top: "30%",
             transform: "translate(-50%, -50%)",
             zIndex: 0,
             opacity: 0.1,
@@ -219,7 +180,7 @@ export default function Hero() {
             maxHeight: 200,
             backgroundColor: "#00bfa5",
             borderRadius: "70% 10% 80% 20% / 20% 10% 90% 100%",
-            top: "30%",
+            top: "20%",
             left: "70%",
             transform: "translate(-50%, -50%)",
             zIndex: 1,
@@ -245,7 +206,6 @@ export default function Hero() {
             width={600}
             height={600}
             priority
-            style={{ width: "auto", height: "auto" }}
           />
         </motion.div>
       </Box>
