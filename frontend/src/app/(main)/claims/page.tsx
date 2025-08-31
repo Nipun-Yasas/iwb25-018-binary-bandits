@@ -10,13 +10,11 @@ import Badge from "@mui/material/Badge";
 import Snackbar from "@mui/material/Snackbar";
 import Alert from "@mui/material/Alert";
 import type { AlertColor } from "@mui/material/Alert";
-import CircularProgress from "@mui/material/CircularProgress";
 
 import PendingTab from "./_components/PendingTab";
 import ApprovedTab from "./_components/ApprovedTab";
 import RejectedTab from "./_components/RejectedTab";
 import AllTab from "./_components/AllTab";
-import ActionDialog from "./_components/ActionDialog";
 import TabPanel from "../../_components/main/TabPanel";
 
 type ClaimStatus = "pending" | "approved" | "rejected" | string;
@@ -24,12 +22,16 @@ type ClaimStatus = "pending" | "approved" | "rejected" | string;
 interface Claim {
   id: string | number;
   status?: ClaimStatus;
-  // ...add other fields from your API if needed
-}
 
-interface User {
-  id: string | number;
-  roles?: string[];
+  // Required claim fields to render
+  claim_id: string;
+  patient_id: string | number;
+  policy_id: string | number;
+  provider_id: string | number;
+  diagnosis_code: string;
+  procedure_code: string;
+  claim_amount: number;
+  decision_reason?: string | null;
 }
 
 interface SnackbarState {
@@ -39,43 +41,56 @@ interface SnackbarState {
 }
 
 export default function Page() {
-
   const [tabValue, setTabValue] = useState<number>(0);
   const [claims, setClaims] = useState<Claim[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
-  const [selectedRecord, setSelectedRecord] = useState<Claim | null>(null);
   const [filterStatus, setFilterStatus] = useState<ClaimStatus>("all");
-  const [openActionDialog, setOpenActionDialog] = useState<boolean>(false);
-  const [actionType, setActionType] = useState<"approve" | "reject" | "">("");
   const [snackbar, setSnackbar] = useState<SnackbarState>({
     open: false,
     message: "",
     severity: "success",
   });
 
+  const toClaims = (data: any): Claim[] => {
+    const list = Array.isArray(data) ? data : data?.data ?? data?.claims ?? data;
+    if (!Array.isArray(list)) return [];
+
+    return list.map((r: any, idx: number): Claim => {
+      const claimId = String(r.claim_id ?? r.id ?? `row-${idx}`);
+      const status = (r.status ?? "").toString().trim().toLowerCase();
+      return {
+        id: claimId,
+        status,
+        claim_id: claimId,
+        patient_id: r.patient_id ?? "",
+        policy_id: r.policy_id ?? "",
+        provider_id: r.provider_id ?? "",
+        diagnosis_code: r.diagnosis_code ?? "",
+        procedure_code: r.procedure_code ?? "",
+        claim_amount: Number(r.claim_amount ?? 0),
+        decision_reason: r.decision_reason ?? null,
+      };
+    });
+  };
+
   const fetchClaims = async (): Promise<void> => {
     setLoading(true);
     try {
-      // let response: AxiosResponse<Claim[]>;
-      // if (isSuperAdmin) {
-      //   response = await axiosInstance.get<Claim[]>(API_PATHS.CLAIMS.GET_ALL);
-      // } else {
-      //   response = await axiosInstance.get<Claim[]>(
-      //     API_PATHS.CLAIMS.GET_BY_ADMINID(user?.id as string | number)
-      //   );
-      // }
-      // setClaims(
-      //   (response.data || []).map((r) => ({
-      //     ...r,
-      //     status: r.status?.toLowerCase(),
-      //   }))
-      // );
+      const res = await fetch("http://localhost:8080/claims", {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+        cache: "no-store",
+      });
+      if (!res.ok) {
+        const txt = await res.text();
+        throw new Error(txt || `Failed to fetch claims (${res.status})`);
+      }
+      const json = await res.json();
+      setClaims(toClaims(json));
     } catch (error: unknown) {
-      // setClaims([]);
-      // const msg = axios.isAxiosError(error)
-      //   ? error.response?.data?.message || "Failed to fetch Claims"
-      //   : "Failed to fetch Claims";
-      // showSnackbar(msg, "error");
+      const msg = error instanceof Error ? error.message : "Failed to fetch claims";
+      setClaims([]);
+      showSnackbar(msg, "error");
     } finally {
       setLoading(false);
     }
@@ -89,32 +104,6 @@ export default function Page() {
     setTabValue(newValue);
   };
 
-  const handleUpdateStatus = (record: Claim, action: "approve" | "reject") => {
-    setSelectedRecord(record);
-    setActionType(action);
-    setOpenActionDialog(true);
-  };
-
-  const updateStatus = async (status: "APPROVED" | "REJECTED") => {
-    if (!selectedRecord) return;
-    try {
-      // await axiosInstance.put(
-      //   `${API_PATHS.CLAIMS.UPDATE_STATUS(selectedRecord.id)}?status=${status}`
-      // );
-      // showSnackbar(
-      //   `Claim ${status === "APPROVED" ? "approved" : "rejected"} successfully`
-      // );
-      // setOpenActionDialog(false);
-      // setSelectedRecord(null);
-      // await fetchClaims();
-    } catch (error: unknown) {
-      // const msg = axios.isAxiosError(error)
-      //   ? error.response?.data?.message || "Failed to update Claim"
-      //   : "Failed to update Claim";
-      // showSnackbar(msg, "error");
-    }
-  };
-
   const showSnackbar = (message: string, severity: AlertColor = "success") => {
     setSnackbar({ open: true, message, severity });
   };
@@ -125,17 +114,14 @@ export default function Page() {
 
   const getFilteredClaims = (status: ClaimStatus): Claim[] => {
     if (status === "all") return claims;
-    return claims.filter((t) => t.status === status);
-    // If status casing differs, ensure both are normalized:
-    // return claims.filter((t) => (t.status || "").toLowerCase() === (status || "").toLowerCase());
+    return claims.filter((t) => (t.status || "").toString().toLowerCase() === status);
   };
 
-  const pendingCount = claims.filter((l) => l.status === "pending").length;
+  const pendingCount = claims.filter((l) => (l.status || "").toString().toLowerCase() === "pending").length;
 
   const tabProps = {
     claims,
     loading,
-    handleUpdateStatus,
     filterStatus,
     setFilterStatus,
   };
@@ -143,69 +129,44 @@ export default function Page() {
   return (
     <Paper elevation={2} sx={{ height: "100%", width: "100%" }}>
       <Box sx={{ p: 2 }}>
-        {/* {!user ? (
-          <Box sx={{ display: "flex", justifyContent: "center", p: 4 }}>
-            <CircularProgress />
-          </Box>
-        ) : ( */}
-          <>
-            <Tabs value={tabValue} onChange={handleTabChange}>
-              <Tab
-                label={
-                  <Badge badgeContent={pendingCount} color="warning">
-                    Pending
-                  </Badge>
-                }
-              />
-              <Tab label="Approved" />
-              <Tab label="Rejected" />
-              <Tab label="All Claims" />
-            </Tabs>
+        <>
+          <Tabs value={tabValue} onChange={handleTabChange}>
+            <Tab
+              label={
+                <Badge badgeContent={pendingCount} color="warning">
+                  Pending
+                </Badge>
+              }
+            />
+            <Tab label="Approved" />
+            <Tab label="Rejected" />
+            <Tab label="All Claims" />
+          </Tabs>
 
-            <TabPanel value={tabValue} index={0}>
-              <PendingTab {...tabProps} claims={getFilteredClaims("pending")} />
-            </TabPanel>
+          <TabPanel value={tabValue} index={0}>
+            <PendingTab {...tabProps} claims={getFilteredClaims("pending")} />
+          </TabPanel>
 
-            <TabPanel value={tabValue} index={1}>
-              <ApprovedTab
-                {...tabProps}
-                claims={getFilteredClaims("approved")}
-              />
-            </TabPanel>
+          <TabPanel value={tabValue} index={1}>
+            <ApprovedTab {...tabProps} claims={getFilteredClaims("approved")} />
+          </TabPanel>
 
-            <TabPanel value={tabValue} index={2}>
-              <RejectedTab
-                {...tabProps}
-                claims={getFilteredClaims("rejected")}
-              />
-            </TabPanel>
+          <TabPanel value={tabValue} index={2}>
+            <RejectedTab {...tabProps} claims={getFilteredClaims("rejected")} />
+          </TabPanel>
 
-            <TabPanel value={tabValue} index={3}>
-              <AllTab {...tabProps} claims={getFilteredClaims("all")} />
-            </TabPanel>
-          </>
-        {/* )} */}
-
-        <ActionDialog
-          open={openActionDialog}
-          selectedRecord={selectedRecord}
-          action={actionType}
-          onClose={() => setOpenActionDialog(false)}
-          onApprove={() => updateStatus("APPROVED")}
-          onReject={() => updateStatus("REJECTED")}
-        />
+          <TabPanel value={tabValue} index={3}>
+            <AllTab {...tabProps} claims={getFilteredClaims("all")} />
+          </TabPanel>
+        </>
 
         <Snackbar
           open={snackbar.open}
-          autoHideDuration={2000}
+          autoHideDuration={2500}
           onClose={handleCloseSnackbar}
           anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
         >
-          <Alert
-            onClose={handleCloseSnackbar}
-            severity={snackbar.severity}
-            sx={{ width: "100%" }}
-          >
+          <Alert onClose={handleCloseSnackbar} severity={snackbar.severity} sx={{ width: "100%" }}>
             {snackbar.message}
           </Alert>
         </Snackbar>

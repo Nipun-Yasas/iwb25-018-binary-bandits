@@ -1,9 +1,17 @@
-import { DataGrid } from "@mui/x-data-grid";
+"use client";
+
+import React, { JSX } from "react";
+import {
+  DataGrid,
+  type GridColDef,
+  type GridValidRowModel,
+  type DataGridProps,
+} from "@mui/x-data-grid";
 
 import Typography from "@mui/material/Typography";
 import Box from "@mui/material/Box";
 
-function CustomNoRowsOverlay() {
+function CustomNoRowsOverlay(): JSX.Element {
   return (
     <Box
       sx={{
@@ -20,25 +28,36 @@ function CustomNoRowsOverlay() {
   );
 }
 
-export default function CustomDataGrid({ rows, columns }) {
+export type CustomDataGridProps<R extends GridValidRowModel = GridValidRowModel> = {
+  rows: R[];
+  columns: GridColDef<R>[];
+  pageSize?: number;
+  pageSizeOptions?: number[];
+} & Omit<DataGridProps<R>, "rows" | "columns" | "pageSize" | "pageSizeOptions">;
+
+export default function CustomDataGrid<R extends GridValidRowModel = GridValidRowModel>(
+  {
+    rows,
+    columns,
+    pageSize = 10,
+    pageSizeOptions = [10, 50, 100],
+    initialState,
+    ...props
+  }: CustomDataGridProps<R>
+): JSX.Element {
   return (
-    <Box
-      sx={{
-        height: "auto",
-        width: "100%",
-      }}
-    >
-      <DataGrid
+    <Box sx={{ height: "auto", width: "100%" }}>
+      <DataGrid<R>
         rows={rows}
         columns={columns}
-        pageSize={10}
-        initialState={{
-          pagination: {
-            paginationModel: { page: 0, pageSize: 10 },
-          },
-        }}
-        pageSizeOptions={[10, 50, 100]}
+        pageSizeOptions={pageSizeOptions}
+        initialState={
+          initialState ?? {
+            pagination: { paginationModel: { page: 0, pageSize } },
+          }
+        }
         slots={{ noRowsOverlay: CustomNoRowsOverlay }}
+        {...props}
       />
     </Box>
   );

@@ -269,6 +269,9 @@ dependencies = [
 	{org = "ballerina", name = "jballerina.java"},
 	{org = "ballerina", name = "time"}
 ]
+modules = [
+	{org = "ballerina", packageName = "random", moduleName = "random"}
+]
 
 [[package]]
 org = "ballerina"
@@ -374,6 +377,7 @@ dependencies = [
 	{org = "ballerina", name = "crypto"},
 	{org = "ballerina", name = "http"},
 	{org = "ballerina", name = "log"},
+	{org = "ballerina", name = "random"},
 	{org = "ballerina", name = "sql"},
 	{org = "ballerina", name = "time"},
 	{org = "ballerina", name = "uuid"},
@@ -383,6 +387,10 @@ dependencies = [
 modules = [
 	{org = "user", packageName = "backend", moduleName = "backend"},
 	{org = "user", packageName = "backend", moduleName = "backend.auth"},
-	{org = "user", packageName = "backend", moduleName = "backend.claim"}
+	{org = "user", packageName = "backend", moduleName = "backend.claim"},
+	{org = "user", packageName = "backend", moduleName = "backend.insurer"},
+	{org = "user", packageName = "backend", moduleName = "backend.person"},
+	{org = "user", packageName = "backend", moduleName = "backend.policie"},
+	{org = "user", packageName = "backend", moduleName = "backend.provider"}
 ]
 

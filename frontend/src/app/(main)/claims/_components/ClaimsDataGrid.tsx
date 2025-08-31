@@ -3,33 +3,26 @@
 import React from "react";
 import Box from "@mui/material/Box";
 import CircularProgress from "@mui/material/CircularProgress";
-import IconButton from "@mui/material/IconButton";
-import Button from "@mui/material/Button";
-import Tooltip from "@mui/material/Tooltip";
 import Chip from "@mui/material/Chip";
-
-import Cancel from "@mui/icons-material/Cancel";
-import CheckCircle from "@mui/icons-material/CheckCircle";
-import DownloadIcon from "@mui/icons-material/Download";
-
-import dayjs from "dayjs";
+import type { GridColDef, GridRenderCellParams } from "@mui/x-data-grid";
 
 import { getStatusColor, getStatusIcon } from "../../_helpers/colorhelper";
 import CustomDataGrid from "../../_components/CustomDataGrid";
-
-import type { GridColDef, GridRenderCellParams } from "@mui/x-data-grid";
 
 type ClaimStatus = "pending" | "approved" | "rejected" | string;
 
 export interface ClaimRow {
   id: string | number;
-  employeeName?: string;
-  departmentName?: string;
-  type?: string;
-  claimDate?: string | Date | null;
-  submission_date?: string | Date | null;
+
+  claim_id: string;
+  patient_id: string | number;
+  policy_id: string | number;
+  provider_id: string | number;
+  diagnosis_code: string;
+  procedure_code: string;
+  claim_amount: number;
   status?: ClaimStatus;
-  claimUrl?: string | null;
+  decision_reason?: string | null;
 }
 
 interface ClaimsDataGridProps {
@@ -39,133 +32,48 @@ interface ClaimsDataGridProps {
   showApprovalActions?: boolean;
 }
 
+const fmtMoney = (n: number) =>
+  isFinite(n as number) ? new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(n) : "-";
+
 export default function ClaimsDataGrid({
   claims,
   loading,
-  handleUpdateStatus,
-  showApprovalActions = false,
 }: ClaimsDataGridProps) {
   const columns: GridColDef<ClaimRow>[] = [
+    { field: "claim_id", headerName: "Claim ID", width: 150 },
+    { field: "patient_id", headerName: "Patient ID", width: 140 },
+    { field: "policy_id", headerName: "Policy ID", width: 140 },
+    { field: "provider_id", headerName: "Provider ID", width: 150 },
+    { field: "diagnosis_code", headerName: "Diagnosis Code", width: 160 },
+    { field: "procedure_code", headerName: "Procedure Code", width: 170 },
     {
-      field: "employeeName",
-      headerName: "Employee Name",
-      width: 150,
-    },
-    {
-      field: "departmentName",
-      headerName: "Department",
-      width: 150,
-    },
-    { field: "type", headerName: "Type", width: 110 },
-    {
-      field: "claimDate",
-      headerName: "Claim Date",
+      field: "claim_amount",
+      headerName: "Amount",
       width: 140,
-      renderCell: (params: GridRenderCellParams<ClaimRow, ClaimRow["claimDate"]>) =>
-        params.value ? dayjs(params.value).format("MMM DD, YYYY") : "-",
-    },
-    {
-      field: "submission_date",
-      headerName: "Submitted",
-      width: 140,
-      renderCell: (params: GridRenderCellParams<ClaimRow, ClaimRow["submission_date"]>) =>
-        params.value ? dayjs(params.value).format("MMM DD, YYYY") : "-",
+      renderCell: (params: GridRenderCellParams<ClaimRow, number>) => fmtMoney(Number(params.value ?? 0)),
     },
     {
       field: "status",
       headerName: "Status",
-      width: 140,
+      width: 130,
       renderCell: (params: GridRenderCellParams<ClaimRow, ClaimRow["status"]>) => {
         const raw = (params.value || "").toString().toLowerCase();
         const icon = getStatusIcon(raw) as React.ReactNode;
-        const color = getStatusColor(raw) as any; // MUI ChipColor
+        const color = getStatusColor(raw) as any;
         const label = params.value || "-";
         return <Chip icon={icon} label={label} color={color} size="small" />;
       },
     },
-    {
-      field: "claimUrl",
-      headerName: "Claim File",
-      width: 170,
-      renderCell: (params: GridRenderCellParams<ClaimRow, ClaimRow["claimUrl"]>) => {
-        const claimUrl = params.value ?? "";
-        if (!claimUrl) return "No file";
-        const fullUrl = `http://localhost:8080${claimUrl}`;
-        return (
-          <Button
-            component="a"
-            href={fullUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            download
-            variant="outlined"
-            size="small"
-            sx={{
-              fontSize: "0.75rem",
-              minWidth: "auto",
-              px: 1,
-              py: 0.5,
-            }}
-            startIcon={<DownloadIcon sx={{ fontSize: 18 }} />}
-          >
-            Download
-          </Button>
-        );
-      },
-    },
-    {
-      field: "actions",
-      headerName: "Actions",
-      width: 120,
-      headerClassName: "last-column",
-      sortable: false,
-      filterable: false,
-      renderCell: (params: GridRenderCellParams<ClaimRow>) => (
-        <Box
-          sx={{
-            display: "flex",
-            gap: 0.5,
-            mt: 1,
-            width: "100%",
-            justifyContent: "center",
-          }}
-        >
-          {showApprovalActions && (params.row.status || "").toString().toLowerCase() === "pending" && (
-            <>
-              <Tooltip title="Approve Claim">
-                <IconButton
-                  size="small"
-                  onClick={() => handleUpdateStatus?.(params.row, "approve")}
-                  color="success"
-                >
-                  <CheckCircle />
-                </IconButton>
-              </Tooltip>
-              <Tooltip title="Reject Claim">
-                <IconButton
-                  size="small"
-                  onClick={() => handleUpdateStatus?.(params.row, "reject")}
-                  color="error"
-                >
-                  <Cancel />
-                </IconButton>
-              </Tooltip>
-            </>
-          )}
-        </Box>
-      ),
-    },
+    { field: "decision_reason", headerName: "Decision", flex: 1, minWidth: 220, headerClassName: "last-column" },
   ];
 
   return (
-    <Box
-      sx={{
-        display: "flex",
-        justifyContent: "center",
-        width: "100%",
-      }}
-    >
-      {loading ? <CircularProgress /> : <CustomDataGrid rows={claims} columns={columns} />}
+    <Box sx={{ display: "flex", justifyContent: "center", width: "100%" }}>
+      {loading ? (
+        <CircularProgress />
+      ) : (
+        <CustomDataGrid<ClaimRow> rows={claims} columns={columns} autoHeight />
+      )}
     </Box>
   );
 }

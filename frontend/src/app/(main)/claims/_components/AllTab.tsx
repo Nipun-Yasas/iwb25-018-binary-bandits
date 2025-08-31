@@ -15,16 +15,14 @@ export interface Claim {
 interface AllTabProps {
   claims: Claim[];
   loading: boolean;
-  handleUpdateStatus: (record: Claim, action: "approve" | "reject") => void;
 }
 
-export default function AllTab({ claims, loading, handleUpdateStatus }: AllTabProps) {
+export default function AllTab({ claims, loading }: AllTabProps) {
   return (
     <Box sx={{ p: 3, mb: 3 }}>
       <ClaimsDataGrid
         claims={claims}
         loading={loading}
-        handleUpdateStatus={handleUpdateStatus}
         showApprovalActions={true}
       />
     </Box>

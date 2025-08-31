@@ -1,4 +1,5 @@
 import { createTheme } from "@mui/material/styles";
+import { outlinedInputClasses } from '@mui/material/OutlinedInput';
 
 declare module "@mui/material/styles" {}
 
@@ -85,6 +86,140 @@ const theme = createTheme({
           light: "#5CBF70",
           dark: "#1C7A32",
           contrastText: "#fff",
+        },
+      },
+    },
+  },
+  components: {
+    MuiButton: {
+    styleOverrides: {
+      root: {
+        fontWeight: 600,
+      }
+    }
+  },
+  MuiTab: {
+    styleOverrides: {
+      root: {
+        fontFamily: 'var(--font-lexend)',
+        fontWeight: 500,
+        textTransform: 'none',
+        '&.Mui-selected': {
+          fontWeight: 600,
+        }
+      }
+    }
+  },
+    MuiDataGrid: {
+      styleOverrides: {
+        root: {
+          '--DataGrid-borderColor': '#000000',
+          '[data-toolpad-color-scheme="dark"] &': {
+            '--DataGrid-borderColor': '#E0E3E7', 
+          },
+          border: '1px solid var(--DataGrid-borderColor)',
+          borderRadius: '10px',
+        },
+        columnHeaders: {
+          borderBottom: '1px solid var(--DataGrid-borderColor)',
+           '& .MuiDataGrid-columnHeader.last-column .MuiDataGrid-columnSeparator': {
+            display: 'none',
+          },
+        },
+        cell: {
+          borderBottom: '1px solid var(--DataGrid-borderColor)',
+        },
+        columnSeparator: {
+          color: 'var(--DataGrid-borderColor)',
+        },
+        iconSeparator: {
+          color: 'var(--DataGrid-borderColor)',
+        },
+        footerContainer: {
+          '& .MuiSvgIcon-root': {
+            color: 'var(--DataGrid-borderColor)'
+          },
+        },
+      },
+    },
+    MuiTextField: {
+      styleOverrides: {
+        root: {
+          '--TextField-borderColor': '#E0E3E7',
+          '--TextField-borderHoverColor': '#E90A4D',
+        }
+      }
+    },
+    MuiOutlinedInput: {
+      styleOverrides: {
+        notchedOutline: {
+          borderColor: 'var(--TextField-borderColor)',
+        },
+        root: {
+          [`&:hover .${outlinedInputClasses.notchedOutline}`]: {
+            borderColor: 'var(--TextField-borderHoverColor)',
+          },
+
+        }
+      }
+    },
+    MuiFilledInput: {
+      styleOverrides: {
+        root: {
+          '&::before, &::after': {
+            borderBottom: '2px solid var(--TextField-borderColor)',
+          },
+          '&:hover:not(.Mui-disabled, .Mui-error):before': {
+            borderBottom: '2px solid var(--TextField-borderHoverColor)',
+          }
+        }
+      }
+    },
+    MuiInput: {
+      styleOverrides: {
+        root: {
+          '&::before': {
+            borderBottom: '2px solid var(--TextField-borderColor)',
+          },
+          '&:hover:not(.Mui-disabled, .Mui-error):before': {
+            borderBottom: '2px solid var(--TextField-borderHoverColor)',
+          }
+        }
+      }
+    },
+    MuiTableRow: {
+      styleOverrides: {
+        root: {
+          '[data-toolpad-color-scheme="dark"] &': {
+            '&:hover': {
+              backgroundColor: 'rgba(255, 255, 255, 0.04)',
+            },
+          },
+        },
+      },
+    },
+    MuiTableHead: {
+      styleOverrides: {
+        root: {
+          '[data-toolpad-color-scheme="dark"] &': {
+            '& .MuiTableRow-root': {
+              backgroundColor: 'transparent',
+            },
+          },
+        },
+      },
+    },
+    MuiBox: {
+      styleOverrides: {
+        root: {
+          '[data-toolpad-color-scheme="dark"] &': {
+            '&[data-weekly-summary="true"]': {
+              backgroundColor: 'transparent !important',
+            },
+            '&[style*="background-color: rgb(245, 245, 245)"]': {
+              backgroundColor: 'transparent !important',
+            },
+          },
         },
       },
     },
